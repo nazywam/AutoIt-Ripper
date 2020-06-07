@@ -4,20 +4,18 @@
 This is a (semi) short python script that allows for extraction of "compiled" AutoIt scripts from PE executables.
 
 ## References
-This script **heavily** bases on 2 resources, definitely check them out if you want to dig a bit deeper into the whole AutoIt stuff:
+This script **heavily** bases on ~~2~~ 3 resources, definitely check them out if you want to dig a bit deeper into the whole AutoIt stuff:
  * http://files.planet-dl.org/Cw2k/MyAutToExe/index.html
    * [Github mirror I](https://github.com/dzzie/myaut_contrib)
    * [Github mirror II](https://github.com/PonyPC/myaut_contrib)
  * https://github.com/sujuhu/autoit
+ * https://opensource.apple.com/source/clamav/clamav-158/clamav.Bin/clamav-0.98/libclamav/autoit.c.auto.html
 
 ## Support versions
 
 ### Ready:
 
 * `EA06` AutoIt3.26++
-
-### Planned:
-
 * `EA05` AutoIt3.00
 
 ### Unknown:
