@@ -11,12 +11,12 @@ This script is **heavily** based on ~~2~~ 3 resources, definitely check them out
  * https://github.com/sujuhu/autoit
  * https://opensource.apple.com/source/clamav/clamav-158/clamav.Bin/clamav-0.98/libclamav/autoit.c.auto.html
 
-## Support versions
+## Supported AutoIt versions
 
 ### Ready:
 
-* `EA06` AutoIt3.26+
 * `EA05` AutoIt3.00
+* `EA06` AutoIt3.26+
 
 ### Unknown:
 
@@ -32,6 +32,9 @@ python3 -m pip install -r requirements.txt
 ```bash
 python3 main.py input.exe
 ```
+
+Optionally specify target AutoIt version with `--ea EA05` or `--ea EA06` for v3.00 and v3.26 respectively.
+
 
 ![](img/smoke.png)
 
@@ -50,7 +53,7 @@ python3 main.py input.exe
 |     path_len     |       4       |  xor(0x29AC)      |  xor(0xF820)      |                             |
 |       path       | path_len (* 2)|MT(0xF25E + path_len)|LAME(0xF479 + path_len) | Path of the compiled script |
 |    compressed    |       1       |  None             |  None             |   is the script compressed  |
-|     data_size    |       4       |  xor(0x45AA)      |  xor(0x87BC)      |   compressed data size      |
+|     data_size    |       4       |  xor(0x45AA)      |  xor(0x87BC)      |    compressed data size     |
 |     code_size    |       4       |  xor(0x45AA)      |  xor(0x87BC)      |    uncompressed data size   |
 |       crc        |       4       |  xor(0xC3D2)      |  xor(0xA685)      | compressed data crc checksum|
 |   creation date  |       4       |  None             |  None             |  file creation date (high)  |
