@@ -168,8 +168,8 @@ def parse_au3_header_ea05(
             (LastWriteTime_dwHighDateTime << 32) + LastWriteTime
         )
 
-        print(f"Creation time: {creation_time}")
-        print(f"Last write time: {last_write_time}")
+        log.debug(f"File creation time: {creation_time}")
+        log.debug(f"File last write time: {last_write_time}")
 
         dec_data = decrypt_mt(data[off:][:data_size], checksum + 0x22AF)
         off += data_size
@@ -225,7 +225,27 @@ def parse_au3_header_ea06(data: bytes) -> Optional[Tuple[int, Optional[str]]]:
         crc = struct.unpack("<I", data[off:][:4])[0] ^ 0xA685
         off += 4
 
-        off += 0x10
+        CreationTime_dwHighDateTime = struct.unpack("<I", data[off:][:4])[0]
+        off += 4
+
+        CreationTime = struct.unpack("<I", data[off:][:4])[0]
+        off += 4
+
+        LastWriteTime_dwHighDateTime = struct.unpack("<I", data[off:][:4])[0]
+        off += 4
+
+        LastWriteTime = struct.unpack("<I", data[off:][:4])[0]
+        off += 4
+
+        creation_time = filetime_to_dt(
+            (CreationTime_dwHighDateTime << 32) + CreationTime
+        )
+        last_write_time = filetime_to_dt(
+            (LastWriteTime_dwHighDateTime << 32) + LastWriteTime
+        )
+
+        log.debug(f"File creation time: {creation_time}")
+        log.debug(f"File last write time: {last_write_time}")
 
         dec_data = decrypt_lame(data[off:][:data_size], 0x2477)
         off += data_size
@@ -258,7 +278,7 @@ def parse_all(data: bytes, version: AutoItVersion) -> Optional[str]:
         if version == AutoItVersion.EA05:
             header = parse_au3_header_ea05(data[off:], checksum)
         elif version == AutoItVersion.EA06:
-            header = parse_au3_header_ea06(data[off:], checksum)
+            header = parse_au3_header_ea06(data[off:])
         else:
             raise Exception("Unsupported autoit version %s", version)
         if not header:
