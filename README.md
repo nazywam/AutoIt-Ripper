@@ -42,22 +42,22 @@ python3 main.py input.exe
 
 ### AU3 header
 
-|       Field      |    Length     |     LAME seed     |            Notes            |
-|:----------------:|:-------------:|:-----------------:|:---------------------------:|
-|      "FILE"      |       4       |       0x18EE      |        static string        |
-|       flag       |       4       |       0xADBC      |                             |
-|     auto_str     |   flag (* 2)  |   0xB33F + flag   |            UTF-16           |
-|     path_len     |       4       |       0xF820      |                             |
-|       path       | path_len (* 2)| 0xF479 + path_len | Path of the compiled script |
-|    compressed    |       1       |        None       |   is the script compressed  |
-|     data_size    |       4       |       0x87BC      |      encoded data size      |
-|     code_size    |       4       |       0x87BC      |   TODO: actual use of this  |
-|       crc        |       4       |       0xA685      |    uncompressed data hash   |
-|   creation date  |       4       |        None       |  file creation date (high)  |
-|   creation date  |       4       |        None       |  file creation date (low)   |
-| last update date |       4       |        None       |      last edit date (high)  |
-| last update date |       4       |        None       |       last edit date (low)  |
-|       data       |   data_size   |       0x2477      |         script data         |
+|       Field      |    Length     | encryption (EA05) | encryption (EA06) |            Notes            |
+|:----------------:|:-------------:|:-----------------:|:-----------------:|:---------------------------:|
+|      "FILE"      |       4       |  MT(0x16FA)       |  LAME(0x18EE)     |        static string        |
+|       flag       |       4       |  xor(0x29BC)      |  xor(0xADBC)      |                             |
+|     auto_str     |   flag (* 2)  |  MT(0xA25E + flag)|LAME(0xB33F + flag)|            UTF-16           |
+|     path_len     |       4       |  xor(0x29AC)      |  xor(0xF820)      |                             |
+|       path       | path_len (* 2)|MT(0xF25E + path_len)|LAME(0xF479 + path_len) | Path of the compiled script |
+|    compressed    |       1       |  None             |  None             |   is the script compressed  |
+|     data_size    |       4       |  xor(0x45AA)      |  xor(0x87BC)      |      encoded data size      |
+|     code_size    |       4       |  xor(0x45AA)      |  xor(0x87BC)      |   TODO: actual use of this  |
+|       crc        |       4       |  xor(0xC3D2)      |  xor(0xA685)      |    uncompressed data hash   |
+|   creation date  |       4       |  None             |  None             |  file creation date (high)  |
+|   creation date  |       4       |  None             |  None             |  file creation date (low)   |
+| last update date |       4       |  None             |  None             |      last edit date (high)  |
+| last update date |       4       |  None             |  None             |       last edit date (low)  |
+|       data       |   data_size   |MT(checksum + 0x22af)|LAME(0x2477)     |         script data         |
 
 ### Differences between v3.00 and v3.26+
 

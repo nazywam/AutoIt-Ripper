@@ -143,7 +143,7 @@ def parse_au3_header_ea05(
 
         uncompressed_size = (
             struct.unpack("<I", data[off:][:4])[0] ^ 0x45AA
-        )  # not used anywhere?
+        )
         off += 4
 
         crc = struct.unpack("<I", data[off:][:4])[0] ^ 0xC3D2
