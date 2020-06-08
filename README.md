@@ -50,9 +50,9 @@ python3 main.py input.exe
 |     path_len     |       4       |  xor(0x29AC)      |  xor(0xF820)      |                             |
 |       path       | path_len (* 2)|MT(0xF25E + path_len)|LAME(0xF479 + path_len) | Path of the compiled script |
 |    compressed    |       1       |  None             |  None             |   is the script compressed  |
-|     data_size    |       4       |  xor(0x45AA)      |  xor(0x87BC)      |      encoded data size      |
-|     code_size    |       4       |  xor(0x45AA)      |  xor(0x87BC)      |   TODO: actual use of this  |
-|       crc        |       4       |  xor(0xC3D2)      |  xor(0xA685)      |    uncompressed data hash   |
+|     data_size    |       4       |  xor(0x45AA)      |  xor(0x87BC)      |   compressed data size      |
+|     code_size    |       4       |  xor(0x45AA)      |  xor(0x87BC)      |    uncompressed data size   |
+|       crc        |       4       |  xor(0xC3D2)      |  xor(0xA685)      | compressed data crc checksum|
 |   creation date  |       4       |  None             |  None             |  file creation date (high)  |
 |   creation date  |       4       |  None             |  None             |  file creation date (low)   |
 | last update date |       4       |  None             |  None             |      last edit date (high)  |
