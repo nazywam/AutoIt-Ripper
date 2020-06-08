@@ -4,7 +4,7 @@
 This is a (semi) short python script that allows for extraction of "compiled" AutoIt scripts from PE executables.
 
 ## References
-This script **heavily** bases on ~~2~~ 3 resources, definitely check them out if you want to dig a bit deeper into the whole AutoIt stuff:
+This script is **heavily** based on ~~2~~ 3 resources, definitely check them out if you want to dig a bit deeper into the whole AutoIt stuff:
  * http://files.planet-dl.org/Cw2k/MyAutToExe/index.html
    * [Github mirror I](https://github.com/dzzie/myaut_contrib)
    * [Github mirror II](https://github.com/PonyPC/myaut_contrib)
@@ -61,4 +61,11 @@ python3 main.py input.exe
 
 ### Differences between v3.00 and v3.26+
 
-:todo:
+|                     	| v3.00              	| v3.26                                 	|
+|---------------------	|--------------------	|---------------------------------------	|
+| Code storage        	| greped by magic    	| "SCRIPT" resource (/greped by magic?) 	|
+| Encryption          	| xor/custom MT19937 	| xor/LAME crypt                        	|
+| Code encryption key 	| dynamic            	| static                                	|
+| Compression         	| yes                	| yes                                   	|
+| Code "compilation"  	| no                 	| yes                                   	|
+| Magic               	| EA05               	| EA06                                  	|

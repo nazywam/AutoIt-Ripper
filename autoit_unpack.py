@@ -22,6 +22,10 @@ MAX_SCRIPT_SIZE = 10 * 10 ** 6
 log = logging.getLogger(__name__)
 
 
+def u32(data: bytes) -> int:
+    return struct.unpack("<I", data[:4])[0]
+
+
 def get_script_resource(pe: lief.PE) -> Optional[lief.PE.ResourceDirectory]:
     for child in pe.resources.childs:
         for grandchild in child.childs:
@@ -36,7 +40,7 @@ def decompress(data: bytes, version: AutoItVersion) -> Optional[bytes]:
     elif data[:4] == b"EA06" and version == AutoItVersion.EA06:
         pass
     else:
-        log.error("Magic mismtach")
+        log.error("Magic mismatch: %s", data[:4])
         return None
 
     uncompressed_size = struct.unpack(">I", data[4:8])[0]
@@ -123,12 +127,12 @@ def parse_au3_header_ea05(
         return None
 
     off += 4
-    flag = struct.unpack("<I", data[off:][:4])[0] ^ 0x29BC
+    flag = u32(data[off:]) ^ 0x29BC
     off += 4
     auto_str = decrypt_mt(data[off:][:flag], 0xA25E + flag).decode("utf-8")
     log.debug("Found a new autoit string: %s", auto_str)
     off += flag
-    path_len = struct.unpack("<I", data[off:][:4])[0] ^ 0x29AC
+    path_len = u32(data[off:]) ^ 0x29AC
     off += 4
     path = decrypt_mt(data[off:][:path_len], 0xF25E + path_len).decode("utf-8")
     log.debug("Found a new path: %s", path)
@@ -138,27 +142,25 @@ def parse_au3_header_ea05(
         comp = data[off]
         off += 1
 
-        data_size = struct.unpack("<I", data[off:][:4])[0] ^ 0x45AA
+        data_size = u32(data[off:]) ^ 0x45AA
         off += 4
 
-        uncompressed_size = (
-            struct.unpack("<I", data[off:][:4])[0] ^ 0x45AA
-        )
+        uncompressed_size = u32(data[off:]) ^ 0x45AA
         off += 4
 
-        crc = struct.unpack("<I", data[off:][:4])[0] ^ 0xC3D2
+        crc = u32(data[off:]) ^ 0xC3D2
         off += 4
 
-        CreationTime_dwHighDateTime = struct.unpack("<I", data[off:][:4])[0]
+        CreationTime_dwHighDateTime = u32(data[off:])
         off += 4
 
-        CreationTime = struct.unpack("<I", data[off:][:4])[0]
+        CreationTime = u32(data[off:])
         off += 4
 
-        LastWriteTime_dwHighDateTime = struct.unpack("<I", data[off:][:4])[0]
+        LastWriteTime_dwHighDateTime = u32(data[off:])
         off += 4
 
-        LastWriteTime = struct.unpack("<I", data[off:][:4])[0]
+        LastWriteTime = u32(data[off:])
         off += 4
 
         creation_time = filetime_to_dt(
@@ -188,7 +190,7 @@ def parse_au3_header_ea05(
         return (off, dec_data.decode("utf-16"))
     else:
         off += 1
-        next_blob = (struct.unpack("<I", data[off:][:4])[0] ^ 0x45AA) + 0x18
+        next_blob = (u32(data[off:]) ^ 0x45AA) + 0x18
         off += 4 + next_blob
 
     return (off, None)
@@ -201,12 +203,12 @@ def parse_au3_header_ea06(data: bytes) -> Optional[Tuple[int, Optional[str]]]:
         return None
 
     off += 4
-    flag = struct.unpack("<I", data[off:][:4])[0] ^ 0xADBC
+    flag = u32(data[off:]) ^ 0xADBC
     off += 4
     auto_str = decrypt_lame(data[off:][: flag * 2], 0xB33F + flag).decode("utf-16")
     log.debug("Found a new autoit string: %s", auto_str)
     off += flag * 2
-    path_len = struct.unpack("<I", data[off:][:4])[0] ^ 0xF820
+    path_len = u32(data[off:]) ^ 0xF820
     off += 4
     path = decrypt_lame(data[off:][: path_len * 2], 0xF479 + path_len).decode("utf-16")
     log.debug("Found a new path: %s", path)
@@ -216,25 +218,25 @@ def parse_au3_header_ea06(data: bytes) -> Optional[Tuple[int, Optional[str]]]:
         comp = data[off]
         off += 1
 
-        data_size = struct.unpack("<I", data[off:][:4])[0] ^ 0x87BC
+        data_size = u32(data[off:]) ^ 0x87BC
         off += 4
 
-        code_size = struct.unpack("<I", data[off:][:4])[0] ^ 0x87BC
+        uncompressed_size = u32(data[off:]) ^ 0x87BC
         off += 4
 
-        crc = struct.unpack("<I", data[off:][:4])[0] ^ 0xA685
+        crc = u32(data[off:]) ^ 0xA685
         off += 4
 
-        CreationTime_dwHighDateTime = struct.unpack("<I", data[off:][:4])[0]
+        CreationTime_dwHighDateTime = u32(data[off:])
         off += 4
 
-        CreationTime = struct.unpack("<I", data[off:][:4])[0]
+        CreationTime = u32(data[off:])
         off += 4
 
-        LastWriteTime_dwHighDateTime = struct.unpack("<I", data[off:][:4])[0]
+        LastWriteTime_dwHighDateTime = u32(data[off:])
         off += 4
 
-        LastWriteTime = struct.unpack("<I", data[off:][:4])[0]
+        LastWriteTime = u32(data[off:])
         off += 4
 
         creation_time = filetime_to_dt(
@@ -264,7 +266,7 @@ def parse_au3_header_ea06(data: bytes) -> Optional[Tuple[int, Optional[str]]]:
         return (off, deassemble_script(dec_data))
     else:
         off += 1
-        next_blob = (struct.unpack("<I", data[off:][:4])[0] ^ 0x87BC) + 0x18
+        next_blob = (u32(data[off:]) ^ 0x87BC) + 0x18
         off += 4 + next_blob
 
     return (off, None)
@@ -306,7 +308,7 @@ def unpack_ea05(filename: str) -> Optional[str]:
         log.error("EA05 magic mismatch")
         return None
 
-    parsed_data = parse_all(bytes(script_data)[4:], AutoItVersion.EA05)
+    parsed_data = parse_all(script_data[4:], AutoItVersion.EA05)
     if not parsed_data:
         log.error("Couldn't decode the autoit script")
         return None
@@ -325,7 +327,7 @@ def unpack_ea06(filename: str) -> Optional[str]:
         return None
 
     script_resource = get_script_resource(pe)
-    if script_resource is None:
+    if script_resource is None or not script_resource.childs:
         log.error("Couldn't find the script resource")
         return None
 
