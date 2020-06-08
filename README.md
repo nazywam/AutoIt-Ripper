@@ -49,7 +49,7 @@ Optionally specify target AutoIt version with `--ea EA05` or `--ea EA06` for v3.
 |:----------------:|:-------------:|:-----------------:|:-----------------:|:---------------------------:|
 |      "FILE"      |       4       |  MT(0x16FA)       |  LAME(0x18EE)     |        static string        |
 |       flag       |       4       |  xor(0x29BC)      |  xor(0xADBC)      |                             |
-|     auto_str     |   flag (* 2)  |  MT(0xA25E + flag)|LAME(0xB33F + flag)|            UTF-16           |
+|     auto_str     |   flag (* 2)  |  MT(0xA25E + flag)|LAME(0xB33F + flag)|        UTF-8/UTF-16         |
 |     path_len     |       4       |  xor(0x29AC)      |  xor(0xF820)      |                             |
 |       path       | path_len (* 2)|MT(0xF25E + path_len)|LAME(0xF479 + path_len) | Path of the compiled script |
 |    compressed    |       1       |  None             |  None             |   is the script compressed  |
@@ -67,6 +67,7 @@ Optionally specify target AutoIt version with `--ea EA05` or `--ea EA06` for v3.
 |                     	| v3.00              	| v3.26                                 	|
 |---------------------	|--------------------	|---------------------------------------	|
 | Code storage        	| greped by magic    	| "SCRIPT" resource (/greped by magic?) 	|
+| String encoding     	| UTF-8             	| UTF-16                                	|
 | Encryption          	| xor/custom MT19937 	| xor/LAME crypt                        	|
 | Code encryption key 	| dynamic            	| static                                	|
 | Compression         	| yes                	| yes                                   	|
