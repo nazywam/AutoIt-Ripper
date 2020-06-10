@@ -124,6 +124,7 @@ def parse_au3_header_ea05(
     off = 0
     file_str = decrypt_mt(data[off:][:4], 0x16FA)
     if file_str != b"FILE":
+        log.debug("FILE magic mismatch")
         return None
 
     off += 4
@@ -138,7 +139,7 @@ def parse_au3_header_ea05(
     log.debug("Found a new path: %s", path)
     off += path_len
 
-    if auto_str == ">AUTOIT UNICODE SCRIPT<":
+    if auto_str in (">AUTOIT UNICODE SCRIPT<", ">AUTOIT SCRIPT<"):
         comp = data[off]
         off += 1
 
@@ -187,7 +188,10 @@ def parse_au3_header_ea05(
                 return None
             dec_data = dec
 
-        return (off, dec_data.decode("utf-16"))
+        if auto_str == ">AUTOIT UNICODE SCRIPT<":
+            return (off, dec_data.decode("utf-16"))
+        else:
+            return (off, dec_data.decode("utf-8"))
     else:
         off += 1
         next_blob = (u32(data[off:]) ^ 0x45AA) + 0x18
