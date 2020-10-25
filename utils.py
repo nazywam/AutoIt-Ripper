@@ -1,4 +1,3 @@
-import struct
 from datetime import datetime, timezone
 from itertools import cycle
 

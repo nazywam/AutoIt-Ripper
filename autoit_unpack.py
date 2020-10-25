@@ -1,7 +1,7 @@
 import logging
 import struct
 from enum import Enum
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Iterator, List
 
 import lief  # type: ignore
 
@@ -118,187 +118,190 @@ def deassemble_script(script_data: bytes) -> str:
     return out
 
 
-def parse_au3_header_ea05(
-    data: bytes, checksum: int
-) -> Optional[Tuple[int, Optional[str]]]:
+def parse_au3_header_ea05(data: bytes, checksum: int) -> Iterator[Tuple[str, bytes]]:
     off = 0
-    file_str = decrypt_mt(data[off:][:4], 0x16FA)
-    if file_str != b"FILE":
-        log.debug("FILE magic mismatch")
-        return None
 
-    off += 4
-    flag = u32(data[off:]) ^ 0x29BC
-    off += 4
-    auto_str = decrypt_mt(data[off:][:flag], 0xA25E + flag).decode("utf-8")
-    log.debug("Found a new autoit string: %s", auto_str)
-    off += flag
-    path_len = u32(data[off:]) ^ 0x29AC
-    off += 4
-    path = decrypt_mt(data[off:][:path_len], 0xF25E + path_len).decode("utf-8")
-    log.debug("Found a new path: %s", path)
-    off += path_len
+    while True:
+        file_str = decrypt_mt(data[off:][:4], 0x16FA)
+        if file_str != b"FILE":
+            log.debug("FILE magic mismatch")
+            # Asssume that this is the end of the embedded data
+            return
+            yield
 
-    if auto_str in (">AUTOIT UNICODE SCRIPT<", ">AUTOIT SCRIPT<"):
-        comp = data[off]
-        off += 1
-
-        data_size = u32(data[off:]) ^ 0x45AA
         off += 4
-
-        uncompressed_size = u32(data[off:]) ^ 0x45AA
+        flag = u32(data[off:]) ^ 0x29BC
         off += 4
-
-        crc = u32(data[off:]) ^ 0xC3D2
+        auto_str = decrypt_mt(data[off:][:flag], 0xA25E + flag).decode("utf-8")
+        log.debug("Found a new autoit string: %s", auto_str)
+        off += flag
+        path_len = u32(data[off:]) ^ 0x29AC
         off += 4
+        path = decrypt_mt(data[off:][:path_len], 0xF25E + path_len).decode("utf-8")
+        log.debug("Found a new path: %s", path)
+        off += path_len
 
-        CreationTime_dwHighDateTime = u32(data[off:])
-        off += 4
-
-        CreationTime = u32(data[off:])
-        off += 4
-
-        LastWriteTime_dwHighDateTime = u32(data[off:])
-        off += 4
-
-        LastWriteTime = u32(data[off:])
-        off += 4
-
-        creation_time = filetime_to_dt(
-            (CreationTime_dwHighDateTime << 32) + CreationTime
-        )
-        last_write_time = filetime_to_dt(
-            (LastWriteTime_dwHighDateTime << 32) + LastWriteTime
-        )
-
-        log.debug(f"File creation time: {creation_time}")
-        log.debug(f"File last write time: {last_write_time}")
-
-        dec_data = decrypt_mt(data[off:][:data_size], checksum + 0x22AF)
-        off += data_size
-        if crc == crc_data(dec_data):
-            log.debug("CRC data matches")
+        if auto_str == ">>>AUTOIT NO CMDEXECUTE<<<":
+            off += 1
+            next_blob = (u32(data[off:]) ^ 0x45AA) + 0x18
+            off += 4 + next_blob
         else:
-            log.error("CRC data mismatch")
+            comp = data[off]
+            off += 1
+
+            data_size = u32(data[off:]) ^ 0x45AA
+            off += 4
+
+            uncompressed_size = u32(data[off:]) ^ 0x45AA  # noqa
+            off += 4
+
+            crc = u32(data[off:]) ^ 0xC3D2
+            off += 4
+
+            CreationTime_dwHighDateTime = u32(data[off:])
+            off += 4
+
+            CreationTime = u32(data[off:])
+            off += 4
+
+            LastWriteTime_dwHighDateTime = u32(data[off:])
+            off += 4
+
+            LastWriteTime = u32(data[off:])
+            off += 4
+
+            creation_time = filetime_to_dt(
+                (CreationTime_dwHighDateTime << 32) + CreationTime
+            )
+            last_write_time = filetime_to_dt(
+                (LastWriteTime_dwHighDateTime << 32) + LastWriteTime
+            )
+
+            log.debug(f"File creation time: {creation_time}")
+            log.debug(f"File last write time: {last_write_time}")
+
+            dec_data = decrypt_mt(data[off:][:data_size], checksum + 0x22AF)
+            off += data_size
+            if crc == crc_data(dec_data):
+                log.debug("CRC data matches")
+            else:
+                log.error("CRC data mismatch")
+                return
+                yield
+
+            if comp == 1:
+                dec = decompress(dec_data, AutoItVersion.EA05)
+                if not dec:
+                    log.error("Error while trying to decompress data")
+                    return
+                    yield
+                dec_data = dec
+
+            if auto_str == ">AUTOIT UNICODE SCRIPT<":
+                yield ("script.au3", dec_data.decode("utf-16").encode("utf-8"))
+            elif auto_str == ">AUTOIT SCRIPT<":
+                yield ("script.au3", dec_data)
+            else:
+                yield (auto_str, dec_data)
+
+
+def parse_au3_header_ea06(data: bytes) -> Iterator[Tuple[str, bytes]]:
+    off = 0
+
+    while True:
+        file_str = decrypt_lame(data[off:][:4], 0x18EE)
+        if file_str != b"FILE":
             return None
 
-        if comp == 1:
-            dec = decompress(dec_data, AutoItVersion.EA05)
-            if not dec:
-                return None
-            dec_data = dec
-
-        if auto_str == ">AUTOIT UNICODE SCRIPT<":
-            return (off, dec_data.decode("utf-16"))
-        else:
-            return (off, dec_data.decode("utf-8"))
-    else:
-        off += 1
-        next_blob = (u32(data[off:]) ^ 0x45AA) + 0x18
-        off += 4 + next_blob
-
-    return (off, None)
-
-
-def parse_au3_header_ea06(data: bytes) -> Optional[Tuple[int, Optional[str]]]:
-    off = 0
-    file_str = decrypt_lame(data[off:][:4], 0x18EE)
-    if file_str != b"FILE":
-        return None
-
-    off += 4
-    flag = u32(data[off:]) ^ 0xADBC
-    off += 4
-    auto_str = decrypt_lame(data[off:][: flag * 2], 0xB33F + flag).decode("utf-16")
-    log.debug("Found a new autoit string: %s", auto_str)
-    off += flag * 2
-    path_len = u32(data[off:]) ^ 0xF820
-    off += 4
-    path = decrypt_lame(data[off:][: path_len * 2], 0xF479 + path_len).decode("utf-16")
-    log.debug("Found a new path: %s", path)
-    off += path_len * 2
-
-    if auto_str == ">>>AUTOIT SCRIPT<<<":
-        comp = data[off]
-        off += 1
-
-        data_size = u32(data[off:]) ^ 0x87BC
         off += 4
-
-        uncompressed_size = u32(data[off:]) ^ 0x87BC
+        flag = u32(data[off:]) ^ 0xADBC
         off += 4
-
-        crc = u32(data[off:]) ^ 0xA685
+        auto_str = decrypt_lame(data[off:][: flag * 2], 0xB33F + flag).decode("utf-16")
+        log.debug("Found a new autoit string: %s", auto_str)
+        off += flag * 2
+        path_len = u32(data[off:]) ^ 0xF820
         off += 4
-
-        CreationTime_dwHighDateTime = u32(data[off:])
-        off += 4
-
-        CreationTime = u32(data[off:])
-        off += 4
-
-        LastWriteTime_dwHighDateTime = u32(data[off:])
-        off += 4
-
-        LastWriteTime = u32(data[off:])
-        off += 4
-
-        creation_time = filetime_to_dt(
-            (CreationTime_dwHighDateTime << 32) + CreationTime
+        path = decrypt_lame(data[off:][: path_len * 2], 0xF479 + path_len).decode(
+            "utf-16"
         )
-        last_write_time = filetime_to_dt(
-            (LastWriteTime_dwHighDateTime << 32) + LastWriteTime
-        )
+        log.debug("Found a new path: %s", path)
+        off += path_len * 2
 
-        log.debug(f"File creation time: {creation_time}")
-        log.debug(f"File last write time: {last_write_time}")
-
-        dec_data = decrypt_lame(data[off:][:data_size], 0x2477)
-        off += data_size
-        if crc == crc_data(dec_data):
-            log.debug("CRC data matches")
+        if auto_str == ">>>AUTOIT NO CMDEXECUTE<<<":
+            off += 1
+            next_blob = (u32(data[off:]) ^ 0x87BC) + 0x18
+            off += 4 + next_blob
         else:
-            log.error("CRC data mismatch")
-            return None
+            comp = data[off]
+            off += 1
 
-        if comp == 1:
-            dec = decompress(dec_data, AutoItVersion.EA06)
-            if not dec:
-                return None
-            dec_data = dec
+            data_size = u32(data[off:]) ^ 0x87BC
+            off += 4
 
-        return (off, deassemble_script(dec_data))
-    else:
-        off += 1
-        next_blob = (u32(data[off:]) ^ 0x87BC) + 0x18
-        off += 4 + next_blob
+            uncompressed_size = u32(data[off:]) ^ 0x87BC  # noqa
+            off += 4
 
-    return (off, None)
+            crc = u32(data[off:]) ^ 0xA685
+            off += 4
+
+            CreationTime_dwHighDateTime = u32(data[off:])
+            off += 4
+
+            CreationTime = u32(data[off:])
+            off += 4
+
+            LastWriteTime_dwHighDateTime = u32(data[off:])
+            off += 4
+
+            LastWriteTime = u32(data[off:])
+            off += 4
+
+            creation_time = filetime_to_dt(
+                (CreationTime_dwHighDateTime << 32) + CreationTime
+            )
+            last_write_time = filetime_to_dt(
+                (LastWriteTime_dwHighDateTime << 32) + LastWriteTime
+            )
+
+            log.debug(f"File creation time: {creation_time}")
+            log.debug(f"File last write time: {last_write_time}")
+
+            dec_data = decrypt_lame(data[off:][:data_size], 0x2477)
+            off += data_size
+            if crc == crc_data(dec_data):
+                log.debug("CRC data matches")
+            else:
+                log.error("CRC data mismatch")
+                return
+                yield
+
+            if comp == 1:
+                dec = decompress(dec_data, AutoItVersion.EA06)
+                if not dec:
+                    log.error("Error while trying to decompress data")
+                    return
+                    yield
+                dec_data = dec
+
+            if auto_str == ">>>AUTOIT SCRIPT<<<":
+                yield ("script.au3", deassemble_script(dec_data).encode())
+            else:
+                yield (auto_str, dec_data)
 
 
-def parse_all(data: bytes, version: AutoItVersion) -> Optional[str]:
+def parse_all(data: bytes, version: AutoItVersion) -> List[Tuple[str, bytes]]:
     checksum = sum(list(data[:16]))
     off = 16
 
-    while True:
-        if version == AutoItVersion.EA05:
-            header = parse_au3_header_ea05(data[off:], checksum)
-        elif version == AutoItVersion.EA06:
-            header = parse_au3_header_ea06(data[off:])
-        else:
-            raise Exception("Unsupported autoit version %s", version)
-        if not header:
-            break
-        offset, script = header
-        off += offset
-        if script:
-            return script
-
-    log.error("Couldn't find any au3 headers")
-    return None
+    if version == AutoItVersion.EA05:
+        return list(parse_au3_header_ea05(data[off:], checksum))
+    elif version == AutoItVersion.EA06:
+        return list(parse_au3_header_ea06(data[off:]))
+    else:
+        raise Exception("Unsupported autoit version %s", version)
 
 
-def unpack_ea05(filename: str) -> Optional[str]:
+def unpack_ea05(filename: str) -> Optional[List[Tuple[str, bytes]]]:
     with open(filename, "rb") as f:
         binary_data = f.read()
 
@@ -320,7 +323,7 @@ def unpack_ea05(filename: str) -> Optional[str]:
     return parsed_data
 
 
-def unpack_ea06(filename: str) -> Optional[str]:
+def unpack_ea06(filename: str) -> Optional[List[Tuple[str, bytes]]]:
     pe = lief.parse(filename)
     if not pe:
         log.error("Failed to parse the input file")
