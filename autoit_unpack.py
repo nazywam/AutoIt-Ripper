@@ -118,9 +118,7 @@ def deassemble_script(script_data: bytes) -> str:
     return out
 
 
-def parse_au3_header_ea05(
-    data: bytes, checksum: int
-) -> Iterator[Tuple[str, bytes]]:
+def parse_au3_header_ea05(data: bytes, checksum: int) -> Iterator[Tuple[str, bytes]]:
     off = 0
 
     while True:
@@ -154,7 +152,7 @@ def parse_au3_header_ea05(
             data_size = u32(data[off:]) ^ 0x45AA
             off += 4
 
-            uncompressed_size = u32(data[off:]) ^ 0x45AA
+            uncompressed_size = u32(data[off:]) ^ 0x45AA  # noqa
             off += 4
 
             crc = u32(data[off:]) ^ 0xC3D2
@@ -224,7 +222,9 @@ def parse_au3_header_ea06(data: bytes) -> Iterator[Tuple[str, bytes]]:
         off += flag * 2
         path_len = u32(data[off:]) ^ 0xF820
         off += 4
-        path = decrypt_lame(data[off:][: path_len * 2], 0xF479 + path_len).decode("utf-16")
+        path = decrypt_lame(data[off:][: path_len * 2], 0xF479 + path_len).decode(
+            "utf-16"
+        )
         log.debug("Found a new path: %s", path)
         off += path_len * 2
 
@@ -239,7 +239,7 @@ def parse_au3_header_ea06(data: bytes) -> Iterator[Tuple[str, bytes]]:
             data_size = u32(data[off:]) ^ 0x87BC
             off += 4
 
-            uncompressed_size = u32(data[off:]) ^ 0x87BC
+            uncompressed_size = u32(data[off:]) ^ 0x87BC  # noqa
             off += 4
 
             crc = u32(data[off:]) ^ 0xA685
@@ -302,7 +302,7 @@ def parse_all(data: bytes, version: AutoItVersion) -> List[Tuple[str, bytes]]:
         raise Exception("Unsupported autoit version %s", version)
 
 
-def unpack_ea05(filename: str) -> Optional[str]:
+def unpack_ea05(filename: str) -> Optional[List[Tuple[str, bytes]]]:
     with open(filename, "rb") as f:
         binary_data = f.read()
 
@@ -324,7 +324,7 @@ def unpack_ea05(filename: str) -> Optional[str]:
     return parsed_data
 
 
-def unpack_ea06(filename: str) -> Optional[str]:
+def unpack_ea06(filename: str) -> Optional[List[Tuple[str, bytes]]]:
     pe = lief.parse(filename)
     if not pe:
         log.error("Failed to parse the input file")

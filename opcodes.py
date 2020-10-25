@@ -10,7 +10,7 @@ def blob(data: bytes) -> Tuple[str, int]:
     if var == 0x33:
         out = "$"
     elif var == 0x36:
-        out = "\""
+        out = '"'
     elif var == 0x30:
         pass
     elif var == 0x32:
@@ -28,13 +28,13 @@ def blob(data: bytes) -> Tuple[str, int]:
     for i in range(key):
         d = unpack_from("<H", data[off:])[0]
         d ^= key
-        dec[i * 2 + 0] = d & 0xff
-        dec[i * 2 + 1] = (d >> 8) & 0xff
+        dec[i * 2 + 0] = d & 0xFF
+        dec[i * 2 + 1] = (d >> 8) & 0xFF
         off += 2
 
-    out += bytes(dec).decode('utf-16')
+    out += bytes(dec).decode("utf-16")
     if var == 0x36:
-        out += "\" "
+        out += '" '
     elif var == 0x33 and data[off] == 0x35:
         out += "."
     else:
@@ -56,12 +56,12 @@ OPCODES = {
     0x37: blob,
     0x38: blob,
     0x39: blob,
-    0x3a: blob,
-    0x3b: blob,
-    0x3c: blob,
-    0x3d: blob,
-    0x3e: blob,
-    0x3f: blob,
+    0x3A: blob,
+    0x3B: blob,
+    0x3C: blob,
+    0x3D: blob,
+    0x3E: blob,
+    0x3F: blob,
     0x40: lambda x: (", ", 1),
     0x41: lambda x: ("= ", 1),
     0x42: lambda x: ("> ", 1),
@@ -72,12 +72,12 @@ OPCODES = {
     0x47: lambda x: ("( ", 1),
     0x48: lambda x: (") ", 1),
     0x49: lambda x: ("+ ", 1),
-    0x4a: lambda x: ("- ", 1),
-    0x4b: lambda x: ("/ ", 1),
-    0x4c: lambda x: ("* ", 1),
-    0x4d: lambda x: ("& ", 1),
-    0x4e: lambda x: ("[ ", 1),
-    0x4f: lambda x: ("] ", 1),
+    0x4A: lambda x: ("- ", 1),
+    0x4B: lambda x: ("/ ", 1),
+    0x4C: lambda x: ("* ", 1),
+    0x4D: lambda x: ("& ", 1),
+    0x4E: lambda x: ("[ ", 1),
+    0x4F: lambda x: ("] ", 1),
     0x50: lambda x: ("== ", 1),
     0x51: lambda x: ("^ ", 1),
     0x52: lambda x: ("+= ", 1),
@@ -86,5 +86,5 @@ OPCODES = {
     0x55: lambda x: ("*= ", 1),
     0x56: lambda x: ("&= ", 1),
     0x57: lambda x: ("? ", 1),
-    0x58: lambda x: (": ", 1)
+    0x58: lambda x: (": ", 1),
 }

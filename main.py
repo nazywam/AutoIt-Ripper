@@ -1,9 +1,7 @@
 import argparse
 import logging
-import sys
 from os.path import basename
 from pathlib import Path
-from typing import Optional
 
 from autoit_unpack import unpack_ea05, unpack_ea06
 
