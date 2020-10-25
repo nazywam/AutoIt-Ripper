@@ -24,13 +24,13 @@ This script is **heavily** based on ~~2~~ 3 resources, definitely check them out
 * `JB01` AutoIT2
 
 ## Installation
-```console
+```shell
 python3 -m pip install autoit-ripper
 ```
 
 or, if you'd like to install the version from sources:
 
-```console
+```shell
 git clone https://github.com/nazywam/AutoIt-Ripper.git
 cd AutoIt-Ripper
 python3 setup.py develop
@@ -51,12 +51,12 @@ content_list = extract(data=file_content, version=AutoItVersion.EA06)
 ```
 
 From the commandline:
-```console
+```shell
 python3 -m autoit-ripper sample.exe out_directory
 ```
 
 Help message:
-```
+```shell
 $ python3 -m autoit_ripper --help
 usage: __main__.py [-h] [--verbose] [--ea {EA05,EA06,guess}] file output_dir
 
