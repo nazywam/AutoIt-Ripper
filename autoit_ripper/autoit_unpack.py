@@ -5,8 +5,8 @@ from typing import Optional, Tuple, Iterator, List
 
 import lief  # type: ignore
 
-from opcodes import OPCODES
-from utils import BitStream, crc_data, decrypt_lame, decrypt_mt, filetime_to_dt
+from .opcodes import OPCODES
+from .utils import BitStream, crc_data, decrypt_lame, decrypt_mt, filetime_to_dt
 
 EA05_MAGIC = bytes.fromhex("a3484bbe986c4aa9994c530a86d6487d41553321")
 
@@ -301,10 +301,7 @@ def parse_all(data: bytes, version: AutoItVersion) -> List[Tuple[str, bytes]]:
         raise Exception("Unsupported autoit version %s", version)
 
 
-def unpack_ea05(filename: str) -> Optional[List[Tuple[str, bytes]]]:
-    with open(filename, "rb") as f:
-        binary_data = f.read()
-
+def unpack_ea05(binary_data: bytes) -> Optional[List[Tuple[str, bytes]]]:
     if EA05_MAGIC not in binary_data:
         log.error("Couldn't find the location chunk in binary")
         return None
@@ -323,8 +320,8 @@ def unpack_ea05(filename: str) -> Optional[List[Tuple[str, bytes]]]:
     return parsed_data
 
 
-def unpack_ea06(filename: str) -> Optional[List[Tuple[str, bytes]]]:
-    pe = lief.parse(filename)
+def unpack_ea06(binary_data: bytes) -> Optional[List[Tuple[str, bytes]]]:
+    pe = lief.parse(raw=list(binary_data))
     if not pe:
         log.error("Failed to parse the input file")
         return None
@@ -345,3 +342,15 @@ def unpack_ea06(filename: str) -> Optional[List[Tuple[str, bytes]]]:
         return None
 
     return parsed_data
+
+
+def extract(data: bytes, version: Optional[AutoItVersion] = None) -> Optional[List[Tuple[str, bytes]]]:
+    if version is None:
+        log.info("AutoIt version not specified, trying both")
+        return unpack_ea05(data) or unpack_ea06(data)
+    elif version == AutoItVersion.EA05:
+        return unpack_ea05(data)
+    elif version == AutoItVersion.EA06:
+        return unpack_ea06(data)
+    else:
+        raise Exception("Unknown version specified, use AutoItVersion or None")
