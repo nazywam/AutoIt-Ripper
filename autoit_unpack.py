@@ -182,7 +182,6 @@ def parse_au3_header_ea05(data: bytes, checksum: int) -> Iterator[Tuple[str, byt
 
             dec_data = decrypt_mt(data[off:][:data_size], checksum + 0x22AF)
             off += data_size
-            print(off, len(data))
             if crc == crc_data(dec_data):
                 log.debug("CRC data matches")
             else:
