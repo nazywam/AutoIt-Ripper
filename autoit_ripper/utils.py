@@ -1,8 +1,8 @@
 from datetime import datetime, timezone
 from itertools import cycle
 
-from lame import LAME
-from mt import MT
+from .lame import LAME
+from .mt import MT
 
 
 def filetime_to_dt(timestamp: int) -> datetime:

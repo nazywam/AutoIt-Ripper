@@ -9,14 +9,14 @@ This script is **heavily** based on ~~2~~ 3 resources, definitely check them out
    * [Github mirror I](https://github.com/dzzie/myaut_contrib)
    * [Github mirror II](https://github.com/PonyPC/myaut_contrib)
  * https://github.com/sujuhu/autoit
- * https://opensource.apple.com/source/clamav/clamav-158/clamav.Bin/clamav-0.98/libclamav/autoit.c.auto.html
+ * https://github.com/Cisco-Talos/clamav-devel/blob/31824a659dff37ae03e3419395bb68e659c2b165/libclamav/autoit.c
 
 ## Supported AutoIt versions
 
 ### Ready:
 
 * `EA05` AutoIt3.00
-* `EA06` AutoIt3.26+
+* `EA06` AutoIt3.26
 
 ### Unknown:
 
@@ -24,19 +24,53 @@ This script is **heavily** based on ~~2~~ 3 resources, definitely check them out
 * `JB01` AutoIT2
 
 ## Installation
-```bash
-python3 -m pip install -r requirements.txt
+```shell
+python3 -m pip install autoit-ripper
+```
+
+or, if you'd like to install the version from sources:
+
+```shell
+git clone https://github.com/nazywam/AutoIt-Ripper.git
+cd AutoIt-Ripper
+python3 setup.py develop
 ```
 
 ## Running
-```bash
-python3 main.py input.exe
+
+From a python script:
+```python
+from autoit_ripper import extract, AutoItVersion
+
+with open("sample.exe", "rb") as f:
+    file_content = f.read()
+
+# EA05 for v3.00+, EA06 for v3.26+
+# Omitting `version` or passing None will try both versions
+content_list = extract(data=file_content, version=AutoItVersion.EA06)
 ```
 
-Optionally specify target AutoIt version with `--ea EA05` or `--ea EA06` for v3.00 and v3.26 respectively.
+From the commandline:
+```shell
+python3 -m autoit-ripper sample.exe out_directory
+```
 
+Help message:
+```shell
+$ python3 -m autoit_ripper --help
+usage: __main__.py [-h] [--verbose] [--ea {EA05,EA06,guess}] file output_dir
 
-![](img/smoke.png)
+positional arguments:
+  file                  input binary
+  output_dir            output directory
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --verbose, -v
+  --ea {EA05,EA06,guess}
+                        extract a specific version of AutoIt script (default:
+                        guess)
+```
 
 
 ## Format documentation

@@ -1,6 +1,6 @@
-from typing import List
 import struct
 import time
+from typing import List
 
 
 def rolling_rol(x: int, y: int) -> int:
