@@ -344,7 +344,9 @@ def unpack_ea06(binary_data: bytes) -> Optional[List[Tuple[str, bytes]]]:
     return parsed_data
 
 
-def extract(data: bytes, version: Optional[AutoItVersion] = None) -> Optional[List[Tuple[str, bytes]]]:
+def extract(
+    data: bytes, version: Optional[AutoItVersion] = None
+) -> Optional[List[Tuple[str, bytes]]]:
     if version is None:
         log.info("AutoIt version not specified, trying both")
         return unpack_ea05(data) or unpack_ea06(data)
