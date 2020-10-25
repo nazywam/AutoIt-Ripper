@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="autoit-ripper", # Replace with your own username
+    name="autoit-ripper",
     version="1.0.0",
     author="nazywam",
     author_email="nazywam@gmail.com",
