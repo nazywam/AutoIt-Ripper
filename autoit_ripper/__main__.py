@@ -47,6 +47,8 @@ def main() -> None:
             filename = basename(filename)
             log.info(f"Storing result in {(output / filename).as_posix()}")
             (output / filename).write_bytes(content)
+        return 0
+    return 1
 
 
 if __name__ == "__main__":
