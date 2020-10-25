@@ -84,5 +84,7 @@ OPCODES = {
     0x53: lambda x: ("-= ", 1),
     0x54: lambda x: ("/= ", 1),
     0x55: lambda x: ("*= ", 1),
-    0x56: lambda x: ("&= ", 1)
+    0x56: lambda x: ("&= ", 1),
+    0x57: lambda x: ("? ", 1),
+    0x58: lambda x: (": ", 1)
 }

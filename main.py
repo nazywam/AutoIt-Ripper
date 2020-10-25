@@ -1,16 +1,20 @@
-from autoit_unpack import unpack_ea05, unpack_ea06
-from typing import Optional
-import sys
 import argparse
 import logging
+import sys
+from os.path import basename
+from pathlib import Path
+from typing import Optional
+
+from autoit_unpack import unpack_ea05, unpack_ea06
 
 logging.basicConfig()
 log = logging.getLogger()
 
 
-def main() -> int:
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("file", help="input binary")
+    parser.add_argument("output", help="output directory")
     parser.add_argument("--verbose", "-v", action="store_true")
     parser.add_argument(
         "--ea",
@@ -27,13 +31,20 @@ def main() -> int:
 
     if args.ea in ("EA05", "guess"):
         data = unpack_ea05(args.file)
-        if data:
-            print(data)
-    if args.ea in ("EA06", "guess"):
+    if not data and args.ea in ("EA06", "guess"):
         data = unpack_ea06(args.file)
-        if data:
-            print(data)
+
+    if data:
+        output = Path(args.output)
+        if not output.is_dir():
+            log.debug("The output directory doesn't exist, creating it")
+            output.mkdir()
+
+        for filename, content in data:
+            # better safe than sorry ¯\_(ツ)_/¯
+            filename = basename(filename)
+            (output / filename).write_bytes(content)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
