@@ -554,7 +554,3 @@ MACROS = (
     "Unicode ",
     "MUILang",
 )
-
-KEYWORDS_INVERT_CASE = {i.upper(): i for i in KEYWORDS}
-FUNCTIONS_INVERT_CASE = {i.upper(): i for i in FUNCTIONS}
-MACROS_INVERT_CASE = {i.upper(): i for i in MACROS}

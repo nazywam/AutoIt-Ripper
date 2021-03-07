@@ -1,9 +1,12 @@
 from struct import unpack_from
 from typing import Tuple
 
-from .autoit_data import (FUNCTIONS, FUNCTIONS_INVERT_CASE, KEYWORDS,
-                          KEYWORDS_INVERT_CASE, MACROS, MACROS_INVERT_CASE)
+from .autoit_data import FUNCTIONS, KEYWORDS, MACROS
 from .utils import ByteStream
+
+KEYWORDS_INVERT_CASE = {i.upper(): i for i in KEYWORDS}
+FUNCTIONS_INVERT_CASE = {i.upper(): i for i in FUNCTIONS}
+MACROS_INVERT_CASE = {i.upper(): i for i in MACROS}
 
 
 class TokenStream(ByteStream):
@@ -30,8 +33,9 @@ class TokenStream(ByteStream):
 
 
 def escape_string(string: str) -> str:
-    # TODO
-    return string
+    # escape double qutoes
+    string = string.replace('"', '""')
+    return f'"{string}"'
 
 
 def apply_keyword_indent(stream: TokenStream, keyword: str) -> None:
