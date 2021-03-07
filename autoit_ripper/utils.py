@@ -1,10 +1,9 @@
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
+from enum import Enum
 from itertools import cycle
-from zlib import adler32
 from struct import unpack_from
 from typing import Optional, Tuple
-from enum import Enum
-
+from zlib import adler32
 
 from .lame import LAME
 from .mt import MT
@@ -112,39 +111,39 @@ def crc_data(data: bytes) -> int:
 
 
 class DecryptorBase:
-    au3_Unicode: Optional[bool]               = None
-    au3_ResType: Optional[int]                = None
+    au3_Unicode: Optional[bool] = None
+    au3_ResType: Optional[int] = None
     au3_ResSubType: Optional[Tuple[int, int]] = None
-    au3_ResName: Optional[Tuple[int, int]]    = None
-    au3_ResSize: Optional[int]                = None
-    au3_ResCrcCompressed: Optional[int]       = None
-    au3_ResContent: Optional[int]             = None
+    au3_ResName: Optional[Tuple[int, int]] = None
+    au3_ResSize: Optional[int] = None
+    au3_ResCrcCompressed: Optional[int] = None
+    au3_ResContent: Optional[int] = None
 
     def decrypt(self, data: bytes, key: int) -> bytes:
         raise NotImplementedError
 
 
 class EA05Decryptor(DecryptorBase):
-    au3_Unicode          =   False
-    au3_ResType          =   0x16FA
-    au3_ResSubType       = ( 0x29BC, 0xA25E)
-    au3_ResName          = ( 0x29AC, 0xF25E)
-    au3_ResSize          =   0x45AA
-    au3_ResCrcCompressed =   0xC3D2
-    au3_ResContent       =   0x22AF
+    au3_Unicode = False
+    au3_ResType = 0x16FA
+    au3_ResSubType = (0x29BC, 0xA25E)
+    au3_ResName = (0x29AC, 0xF25E)
+    au3_ResSize = 0x45AA
+    au3_ResCrcCompressed = 0xC3D2
+    au3_ResContent = 0x22AF
 
     def decrypt(self, data: bytes, key: int) -> bytes:
         return decrypt_mt(data, key)
 
 
 class EA06Decryptor(DecryptorBase):
-    au3_Unicode          =   True
-    au3_ResType          =   0x18EE
-    au3_ResSubType       = ( 0xADBC, 0xB33F)
-    au3_ResName          = ( 0xF820, 0xF479)
-    au3_ResSize          =   0x87BC
-    au3_ResCrcCompressed =   0xA685
-    au3_ResContent       =   0x2477
+    au3_Unicode = True
+    au3_ResType = 0x18EE
+    au3_ResSubType = (0xADBC, 0xB33F)
+    au3_ResName = (0xF820, 0xF479)
+    au3_ResSize = 0x87BC
+    au3_ResCrcCompressed = 0xA685
+    au3_ResContent = 0x2477
 
     def decrypt(self, data: bytes, key: int) -> bytes:
         return decrypt_lame(data, key)

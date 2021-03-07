@@ -1,21 +1,14 @@
 import logging
 import struct
-from typing import Optional, Tuple, Iterator, List, Any, Union
+from typing import Any, Iterator, List, Optional, Tuple, Union
+
 import pefile  # type: ignore
 
-from .opcodes import OPCODES
-from .utils import (
-    BitStream,
-    ByteStream,
-    crc_data,
-    decrypt_lame,
-    decrypt_mt,
-    filetime_to_dt,
-    AutoItVersion,
-    EA05Decryptor,
-    EA06Decryptor,
-)
 from .decompress import decompress
+from .opcodes import deassemble_script
+from .utils import (AutoItVersion, BitStream, ByteStream, EA05Decryptor,
+                    EA06Decryptor, crc_data, decrypt_lame, decrypt_mt,
+                    filetime_to_dt)
 
 log = logging.getLogger(__name__)
 
@@ -51,33 +44,11 @@ def get_script_resource(pe: pefile.PE) -> Optional[Any]:
     return None
 
 
-def deassemble_script(script_data: bytes) -> str:
-    section_num = struct.unpack("<I", script_data[:4])[0]
-    section_index = 0
-    offset = 4
-
-    out = ""
-    while section_index < section_num:
-        opcode = script_data[offset]
-        if opcode in OPCODES:
-            add, off = OPCODES[opcode](script_data[offset:])
-        elif opcode == 0x7F:
-            section_index += 1
-            add, off = "\r\n", 0 + 1
-        elif opcode <= 0x0F:
-            add, off = "", 4 + 1
-        elif opcode <= 0x1F:
-            add, off = "", 8 + 1
-        elif opcode <= 0x2F:
-            add, off = "", 8 + 1
-        else:
-            add, off = "", 0 + 1
-
-        out += add
-        offset += off
-    return out
-
-def read_string(stream: ByteStream, decryptor: Union[EA05Decryptor, EA06Decryptor], keys: List[int]) -> str:
+def read_string(
+    stream: ByteStream,
+    decryptor: Union[EA05Decryptor, EA06Decryptor],
+    keys: Tuple[int, int],
+) -> str:
     length = stream.u32() ^ keys[0]
     enc_key = length + keys[1]
 
@@ -86,7 +57,7 @@ def read_string(stream: ByteStream, decryptor: Union[EA05Decryptor, EA06Decrypto
         encoding = "utf-16"
     else:
         encoding = "utf-8"
-    
+
     return decryptor.decrypt(stream.get_bytes(length), enc_key).decode(encoding)
 
 
@@ -110,23 +81,26 @@ def parse_au3_header(
         if au3_ResSubType == ">>>AUTOIT NO CMDEXECUTE<<<":
             stream.skip_bytes(num=1)
             next_blob = (stream.u32() ^ decryptor.au3_ResSize) + 0x18
-            stream.skip_bytes(num=next_blob) # uncompressed_size, crc, CreationTime_64
+            stream.skip_bytes(num=next_blob)  # uncompressed_size, crc, CreationTime_64
         else:
-            au3_ResIsCompressed   = stream.u8 ()
+            au3_ResIsCompressed = stream.u8()
             au3_ResSizeCompressed = stream.u32() ^ decryptor.au3_ResSize
-            au3_ResSize           = stream.u32() ^ decryptor.au3_ResSize
-            au3_ResCrcCompressed  = stream.u32() ^ decryptor.au3_ResCrcCompressed
+            au3_ResSize = stream.u32() ^ decryptor.au3_ResSize
+            au3_ResCrcCompressed = stream.u32() ^ decryptor.au3_ResCrcCompressed
 
-            CreationTime          = (stream.u32() << 32) | stream.u32()
-            LastWriteTime         = (stream.u32() << 32) | stream.u32()
+            CreationTime = (stream.u32() << 32) | stream.u32()
+            LastWriteTime = (stream.u32() << 32) | stream.u32()
 
-            creation_time_dt    = filetime_to_dt(CreationTime)
-            last_write_time_dt  = filetime_to_dt(LastWriteTime)
+            creation_time_dt = filetime_to_dt(CreationTime)
+            last_write_time_dt = filetime_to_dt(LastWriteTime)
 
             log.debug(f"File creation time: {creation_time_dt}")
             log.debug(f"File last write time: {last_write_time_dt}")
 
-            dec_data = decryptor.decrypt(stream.get_bytes(au3_ResSizeCompressed), checksum + decryptor.au3_ResContent)
+            dec_data = decryptor.decrypt(
+                stream.get_bytes(au3_ResSizeCompressed),
+                checksum + decryptor.au3_ResContent,
+            )
             if au3_ResCrcCompressed == crc_data(dec_data):
                 log.debug("CRC data matches")
             else:
@@ -156,9 +130,15 @@ def parse_all(stream: ByteStream, version: AutoItVersion) -> List[Tuple[str, byt
     checksum = sum(list(stream.get_bytes(16)))
 
     if version == AutoItVersion.EA05:
-        return list(parse_au3_header(stream=stream, checksum=checksum, decryptor=EA05Decryptor()))
+        return list(
+            parse_au3_header(
+                stream=stream, checksum=checksum, decryptor=EA05Decryptor()
+            )
+        )
     elif version == AutoItVersion.EA06:
-        return list(parse_au3_header(stream=stream, checksum=0, decryptor=EA06Decryptor()))
+        return list(
+            parse_au3_header(stream=stream, checksum=0, decryptor=EA06Decryptor())
+        )
     else:
         raise Exception("Unsupported autoit version %s", version)
 
