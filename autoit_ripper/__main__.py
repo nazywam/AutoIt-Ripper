@@ -6,11 +6,11 @@ from pathlib import Path
 
 from .autoit_unpack import AutoItVersion, extract
 
-logging.basicConfig()
-log = logging.getLogger()
 
+def main() -> int:
+    logging.basicConfig()
+    log = logging.getLogger()
 
-def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("file", help="input binary")
     parser.add_argument("output_dir", help="output directory")

@@ -43,9 +43,13 @@ def blob(data: bytes) -> Tuple[str, int]:
 
 
 OPCODES = {
+    # 0x00: lambda x: ( Au3Keyword_indent(x, Au3KeyWord_get( x, x.i32() ) ) ), # keyword
+    # 0x01: lambda x: ( Au3Funcs[    x.i32() ]), # function
+    # Numbers
     0x05: lambda x: (str(unpack_from("<I", x)[0]) + " ", 1 + 4),
     0x10: lambda x: (str(unpack_from("<Q", x)[0]) + " ", 1 + 8),
     0x20: lambda x: (str(unpack_from("<d", x)[0]) + " ", 1 + 8),
+    # Statements
     0x30: blob,
     0x31: blob,
     0x32: blob,
@@ -62,6 +66,7 @@ OPCODES = {
     0x3D: blob,
     0x3E: blob,
     0x3F: blob,
+    # operators
     0x40: lambda x: (", ", 1),
     0x41: lambda x: ("= ", 1),
     0x42: lambda x: ("> ", 1),
