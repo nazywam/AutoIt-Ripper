@@ -142,79 +142,14 @@ def parse_au3_header(
                     yield
                 dec_data = dec
 
-            if au3_ResSubType == ">AUTOIT UNICODE SCRIPT<":
-                yield ("script.au3", dec_data.decode("utf-16").encode("utf-8"))
+            if au3_ResSubType == ">>>AUTOIT SCRIPT<<<":
+                yield ("script.au3", deassemble_script(dec_data).encode())
+            elif au3_ResSubType == ">AUTOIT UNICODE SCRIPT<":
+                yield ("script.au3", dec_data.decode("utf-16").encode())
             elif au3_ResSubType == ">AUTOIT SCRIPT<":
                 yield ("script.au3", dec_data)
             else:
                 yield (au3_ResSubType, dec_data)
-
-
-# def parse_au3_header_ea06(stream: ByteStream) -> Iterator[Tuple[str, bytes]]:
-
-#     while True:
-#         file_str = decrypt_lame(stream.get_bytes(4), 0x18EE)
-#         if file_str != b"FILE":
-#             return None
-
-#         flag = stream.u32() ^ 0xADBC
-
-#         auto_str = decrypt_lame(stream.get_bytes(flag * 2), 0xB33F + flag).decode(
-#             "utf-16"
-#         )
-#         log.debug("Found a new autoit string: %s", auto_str)
-
-#         path_len = stream.u32() ^ 0xF820
-#         path = decrypt_lame(stream.get_bytes(path_len * 2), 0xF479 + path_len).decode(
-#             "utf-16"
-#         )
-#         log.debug("Found a new path: %s", path)
-
-#         if auto_str == ">>>AUTOIT NO CMDEXECUTE<<<":
-#             stream.skip_bytes(1)
-#             next_blob = (stream.u32() ^ 0x87BC) + 0x18
-#             stream.skip_bytes(next_blob)
-#         else:
-#             comp = stream.u8()
-#             data_size = stream.u32() ^ 0x87BC
-#             uncompressed_size = stream.u32() ^ 0x87BC  # noqa
-#             crc = stream.u32() ^ 0xA685
-#             CreationTime_dwHighDateTime = stream.u32()
-#             CreationTime = stream.u32()
-#             LastWriteTime_dwHighDateTime = stream.u32()
-#             LastWriteTime = stream.u32()
-
-#             creation_time = filetime_to_dt(
-#                 (CreationTime_dwHighDateTime << 32) + CreationTime
-#             )
-#             last_write_time = filetime_to_dt(
-#                 (LastWriteTime_dwHighDateTime << 32) + LastWriteTime
-#             )
-
-#             log.debug(f"File creation time: {creation_time}")
-#             log.debug(f"File last write time: {last_write_time}")
-
-#             dec_data = decrypt_lame(stream.get_bytes(data_size), 0x2477)
-
-#             if crc == crc_data(dec_data):
-#                 log.debug("CRC data matches")
-#             else:
-#                 log.error("CRC data mismatch")
-#                 return
-#                 yield
-
-#             if comp == 1:
-#                 dec = decompress(ByteStream(dec_data))
-#                 if not dec:
-#                     log.error("Error while trying to decompress data")
-#                     return
-#                     yield
-#                 dec_data = dec
-
-#             if auto_str == ">>>AUTOIT SCRIPT<<<":
-#                 yield ("script.au3", deassemble_script(dec_data).encode())
-#             else:
-#                 yield (auto_str, dec_data)
 
 
 def parse_all(stream: ByteStream, version: AutoItVersion) -> List[Tuple[str, bytes]]:
