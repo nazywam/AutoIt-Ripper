@@ -98,7 +98,8 @@ def xor(data: bytes, key: bytes) -> bytes:
 def decrypt_lame(data: bytes, seed: int) -> bytes:
     lame = LAME()
     lame.srand(seed)
-    return bytes([x ^ lame.get_next() for x in data])
+    lame_stream = lame.get_n_next(len(data))
+    return xor(data, lame_stream)
 
 
 def decrypt_mt(data: bytes, seed: int) -> bytes:
