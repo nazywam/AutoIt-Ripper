@@ -94,7 +94,7 @@ OPCODES = {
     0x30: read_keyword,
     0x31: lambda x: FUNCTIONS_INVERT_CASE[x.get_xored_string()],
     0x32: lambda x: "@" + MACROS_INVERT_CASE[x.get_xored_string()],
-    0x33: lambda x: x.get_xored_string(),
+    0x33: lambda x: "$" + x.get_xored_string(),
     0x34: lambda x: x.get_xored_string(),
     0x35: lambda x: "." + x.get_xored_string(),
     0x36: lambda x: escape_string(x.get_xored_string()),
