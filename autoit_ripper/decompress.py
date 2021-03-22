@@ -79,11 +79,10 @@ def decompress(stream: ByteStream) -> Optional[bytes]:
     out_data = bytearray()
 
     while len(out_data) < uncompressed_size:
-
         if bin_data.get_bits(1) == literal_symbol:
             out_data.append(bin_data.get_bits(8))
         else:
-            if version == AutoItVersion.EA06:
+            if version in (AutoItVersion.EA05, AutoItVersion.EA06):
                 offset = bin_data.get_bits(0xF)
                 match_len = read_match_len(bin_data)
             else:
