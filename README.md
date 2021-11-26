@@ -1,10 +1,10 @@
 # AutoIt-Ripper
 
 ## What is this
-This is a (semi) short python script that allows for extraction of "compiled" AutoIt scripts from PE executables.
+This is a short python script that allows for extraction of "compiled" AutoIt scripts from PE executables.
 
 ## References
-This script is **heavily** based on ~~2~~ 3 resources, definitely check them out if you want to dig a bit deeper into the whole AutoIt stuff:
+This script is **heavily** based on 3 resources, definitely check them out if you want to dig a bit deeper into AutoIt stuff:
  * http://files.planet-dl.org/Cw2k/MyAutToExe/index.html
    * [Github mirror I](https://github.com/dzzie/myaut_contrib)
    * [Github mirror II](https://github.com/PonyPC/myaut_contrib)
@@ -33,7 +33,7 @@ or, if you'd like to install the version from sources:
 ```shell
 git clone https://github.com/nazywam/AutoIt-Ripper.git
 cd AutoIt-Ripper
-python3 setup.py develop
+pip install .
 ```
 
 ## Running
@@ -52,13 +52,13 @@ content_list = extract(data=file_content, version=AutoItVersion.EA06)
 
 From the commandline:
 ```shell
-python3 -m autoit-ripper sample.exe out_directory
+autoit-ripper sample.exe out_directory
 ```
 
 Help message:
 ```shell
-$ python3 -m autoit_ripper --help
-usage: __main__.py [-h] [--verbose] [--ea {EA05,EA06,guess}] file output_dir
+autoit-ripper --help
+usage: autoit-ripper [-h] [--verbose] [--ea {EA05,EA06,guess}] file output_dir
 
 positional arguments:
   file                  input binary
@@ -68,8 +68,8 @@ optional arguments:
   -h, --help            show this help message and exit
   --verbose, -v
   --ea {EA05,EA06,guess}
-                        extract a specific version of AutoIt script (default:
-                        guess)
+                        extract a specific version of AutoIt script (default: guess)
+
 ```
 
 
