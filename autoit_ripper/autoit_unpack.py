@@ -20,8 +20,7 @@ log = logging.getLogger(__name__)
 EA05_MAGIC = bytes.fromhex("a3484bbe986c4aa9994c530a86d6487d41553321")
 
 
-# TODO ANY
-def find_root_dir(pe: pefile.PE, RT_Name: str) -> Optional[Any]:
+def find_root_dir(pe: pefile.PE, RT_Name: str) -> Optional[pefile.ResourceDirData]:
     dir_entries = [
         entry
         for entry in pe.DIRECTORY_ENTRY_RESOURCE.entries
@@ -37,7 +36,7 @@ def find_root_dir(pe: pefile.PE, RT_Name: str) -> Optional[Any]:
         return None
 
 
-def get_script_resource(pe: pefile.PE) -> Optional[Any]:
+def get_script_resource(pe: pefile.PE) -> Optional[pefile.Structure]:
     root_dirs = find_root_dir(pe=pe, RT_Name="RT_RCDATA")
     if not root_dirs:
         return None
