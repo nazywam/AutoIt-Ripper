@@ -43,7 +43,7 @@ def get_script_resource(pe: pefile.PE) -> Optional[Any]:
         return None
 
     for entry in root_dirs.entries:
-        if entry.name is not None:
+        if entry.name and entry.name.string == b"SCRIPT":
             return entry.directory.entries[0].data.struct
     return None
 
@@ -153,7 +153,7 @@ def unpack_ea05(binary_data: bytes) -> Optional[List[Tuple[str, bytes]]]:
         return None
 
     au_off = binary_data.index(EA05_MAGIC)
-    stream = ByteStream(binary_data[au_off + 20 :])
+    stream = ByteStream(binary_data[au_off + 20:])
 
     if stream.get_bytes(4) != b"EA05":
         log.error("EA05 magic mismatch")
@@ -185,7 +185,7 @@ def unpack_ea06(binary_data: bytes) -> Optional[List[Tuple[str, bytes]]]:
 
     data_rva = script_resource.OffsetToData
     data_size = script_resource.Size
-    script_data = pe.get_memory_mapped_image()[data_rva : data_rva + data_size]
+    script_data = pe.get_memory_mapped_image()[data_rva: data_rva + data_size]
 
     stream = ByteStream(bytes(script_data)[0x18:])
     parsed_data = parse_all(stream, AutoItVersion.EA06)

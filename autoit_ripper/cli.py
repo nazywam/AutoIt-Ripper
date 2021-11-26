@@ -30,6 +30,7 @@ def main() -> int:
     with open(args.file, "rb") as f:
         file_data = f.read()
 
+    data = None
     if args.ea in ("EA05", "guess"):
         data = extract(data=file_data, version=AutoItVersion.EA05)
     if not data and args.ea in ("EA06", "guess"):
@@ -45,7 +46,7 @@ def main() -> int:
             # We need to convert the nasty Windows path into a nice, unix one
             filename = PureWindowsPath(filename_w)
             log.info(f"Storing result in {(output / filename.name).as_posix()}")
-            (output / filename).write_bytes(content)
+            (output / filename.name).write_bytes(content)
         return 0
     return 1
 
