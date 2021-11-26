@@ -22,9 +22,9 @@ log = logging.getLogger(__name__)
 def read_match_len(bin_data: BitStream) -> int:
     func_vec = (
         # nLen ibit getMore
-        (3, 2, 0b11),  #   3
-        (6, 3, 0b111),  #   7
-        (13, 5, 0b11111),  #  31
+        (3, 2, 0b11),  # 3
+        (6, 3, 0b111),  # 7
+        (13, 5, 0b11111),  # 31
         (44, 8, 255),
         (299, 8, 255),
     )

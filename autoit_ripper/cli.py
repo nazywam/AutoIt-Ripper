@@ -1,8 +1,7 @@
 import argparse
 import logging
 import sys
-from os.path import basename
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 from .autoit_unpack import AutoItVersion, extract
 
@@ -42,10 +41,10 @@ def main() -> int:
             log.info("The output directory doesn't exist, creating it")
             output.mkdir()
 
-        for filename, content in data:
-            # better safe than sorry ¯\_(ツ)_/¯
-            filename = basename(filename)
-            log.info(f"Storing result in {(output / filename).as_posix()}")
+        for filename_w, content in data:
+            # We need to convert the nasty Windows path into a nice, unix one
+            filename = PureWindowsPath(filename_w)
+            log.info(f"Storing result in {(output / filename.name).as_posix()}")
             (output / filename).write_bytes(content)
         return 0
     return 1

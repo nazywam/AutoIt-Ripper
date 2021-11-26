@@ -1,6 +1,3 @@
-from struct import unpack_from
-from typing import Tuple
-
 from .autoit_data import FUNCTIONS, KEYWORDS, MACROS
 from .utils import ByteStream
 

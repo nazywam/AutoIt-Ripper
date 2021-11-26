@@ -1,5 +1,4 @@
 import logging
-import struct
 from typing import Any, Iterator, List, Optional, Tuple, Union
 
 import pefile  # type: ignore
@@ -8,13 +7,10 @@ from .decompress import decompress
 from .opcodes import deassemble_script
 from .utils import (
     AutoItVersion,
-    BitStream,
     ByteStream,
     EA05Decryptor,
     EA06Decryptor,
     crc_data,
-    decrypt_lame,
-    decrypt_mt,
     filetime_to_dt,
 )
 
