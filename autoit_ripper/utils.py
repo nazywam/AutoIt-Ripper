@@ -31,7 +31,7 @@ class BitStream:
         self._offset = 0
 
     def get_bits(self, num: int) -> int:
-        data = self._data[self._offset : self._offset + num]
+        data = self._data[self._offset: self._offset + num]
         self._offset += num
         return int(data, 2)
 
@@ -48,7 +48,7 @@ class ByteStream:
         if num is None:
             num = len(self._data) - self._offset
 
-        data = self._data[self._offset : self._offset + num]
+        data = self._data[self._offset: self._offset + num]
         self._offset += num
         return data
 

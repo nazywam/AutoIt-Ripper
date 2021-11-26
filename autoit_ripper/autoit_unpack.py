@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Iterator, List, Optional, Tuple, Union
+from typing import Iterator, List, Optional, Tuple, Union
 
 import pefile  # type: ignore
 
