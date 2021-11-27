@@ -19,8 +19,7 @@ class TokenStream(ByteStream):
 
         ret = bytearray(key * 2)
         for i in range(key):
-            c = self.u16()
-            c ^= key
+            c = self.u16() ^ key
             ret[i * 2 + 0] = c & 0xFF
             ret[i * 2 + 1] = (c >> 8) & 0xFF
         return ret.decode("utf-16")
