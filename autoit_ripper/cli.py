@@ -1,16 +1,15 @@
 import argparse
 import logging
 import sys
-from os.path import basename
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 from .autoit_unpack import AutoItVersion, extract
 
-logging.basicConfig()
-log = logging.getLogger()
 
+def main() -> int:
+    logging.basicConfig()
+    log = logging.getLogger()
 
-def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("file", help="input binary")
     parser.add_argument("output_dir", help="output directory")
@@ -31,6 +30,7 @@ def main() -> None:
     with open(args.file, "rb") as f:
         file_data = f.read()
 
+    data = None
     if args.ea in ("EA05", "guess"):
         data = extract(data=file_data, version=AutoItVersion.EA05)
     if not data and args.ea in ("EA06", "guess"):
@@ -42,11 +42,11 @@ def main() -> None:
             log.info("The output directory doesn't exist, creating it")
             output.mkdir()
 
-        for filename, content in data:
-            # better safe than sorry ¯\_(ツ)_/¯
-            filename = basename(filename)
-            log.info(f"Storing result in {(output / filename).as_posix()}")
-            (output / filename).write_bytes(content)
+        for filename_w, content in data:
+            # We need to convert the nasty Windows path into a nice, unix one
+            filename = PureWindowsPath(filename_w)
+            log.info(f"Storing result in {(output / filename.name).as_posix()}")
+            (output / filename.name).write_bytes(content)
         return 0
     return 1
 
