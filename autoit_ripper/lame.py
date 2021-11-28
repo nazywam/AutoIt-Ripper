@@ -44,8 +44,7 @@ class LAME:
 
     def srand(self, seed: int) -> None:
         for i in range(17):
-            seed = (seed * 0x53A9B4FB) & 0xFFFFFFFF
-            seed = (1 - seed + 2 ** 32) & 0xFFFFFFFF
+            seed = (1 - seed * 0x53A9B4FB) & 0xFFFFFFFF
             self.grp1[i] = seed
 
         self.c0 = 0

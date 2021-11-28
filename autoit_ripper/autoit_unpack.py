@@ -32,7 +32,7 @@ def find_root_dir(pe: pefile.PE, RT_Name: str) -> Optional[pefile.ResourceDirDat
         log.error("Couldn't find any appropiate PE resource directory")
         return None
     else:
-        log.error("Couldn't find any appropiate PE resource directory")
+        log.error("Found multiple PE resource directories, inspect the binary manually")
         return None
 
 
