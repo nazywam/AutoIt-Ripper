@@ -67,13 +67,13 @@ class ByteStream:
         return self._int(1, False)
 
     def i8(self) -> int:
-        return self._int(1, False)
+        return self._int(1, True)
 
     def u16(self) -> int:
         return self._int(2, False)
 
     def i16(self) -> int:
-        return self._int(2, False)
+        return self._int(2, True)
 
     def u32(self) -> int:
         return self._int(4, False)
@@ -82,13 +82,13 @@ class ByteStream:
         return self._int_be(4, False)
 
     def i32(self) -> int:
-        return self._int(4, False)
+        return self._int(4, True)
 
     def u64(self) -> int:
         return self._int(8, False)
 
     def i64(self) -> int:
-        return self._int(8, False)
+        return self._int(8, True)
 
 
 def xor(data: bytes, key: bytes) -> bytes:
