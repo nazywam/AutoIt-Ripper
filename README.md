@@ -1,5 +1,11 @@
 # AutoIt-Ripper
 
+FORK UPDATE
+
+* Noticed that the previous implementation didn't take into account that compiled scripts could be stored in the overlay
+  of a PE so this fork will implement that change.
+
+
 ## What is this
 This is a short python script that allows for extraction of "compiled" AutoIt scripts from PE executables.
 
