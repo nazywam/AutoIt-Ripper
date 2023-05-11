@@ -2,6 +2,7 @@ import logging
 from typing import Iterator, List, Optional, Tuple, Union
 
 import pefile  # type: ignore
+import jb01
 
 from .decompress import decompress
 from .opcodes import deassemble_script
@@ -10,6 +11,7 @@ from .utils import (
     ByteStream,
     EA05Decryptor,
     EA06Decryptor,
+    JB01Decryptor,
     crc_data,
     filetime_to_dt,
 )
@@ -18,6 +20,7 @@ log = logging.getLogger(__name__)
 
 
 EA05_MAGIC = bytes.fromhex("a3484bbe986c4aa9994c530a86d6487d41553321")
+JB01_MAGIC = bytes.fromhex("a3484bbe986c4aa9994c530a86d6487d")
 
 
 def find_root_dir(pe: pefile.PE, RT_Name: str) -> Optional[pefile.ResourceDirData]:
@@ -194,15 +197,76 @@ def unpack_ea06(binary_data: bytes) -> Optional[List[Tuple[str, bytes]]]:
     return parsed_data
 
 
+def unpack_jb01(binary_data: bytes) -> Optional[List[Tuple[str, bytes]]]:
+    if JB01_MAGIC not in binary_data:
+        log.error("Couldn't find the location chunk in binary")
+        return None
+
+    au_off = binary_data.index(JB01_MAGIC)
+    stream = ByteStream(binary_data[au_off+len(JB01_MAGIC):])
+    if stream.i8() != 3:
+        log.error("Unknown name field mismatch")
+        return None
+    decryptor = JB01Decryptor()
+    length = stream.u32() ^ decryptor.au3_ResCrcCompressedSize
+    res_crc_compressed = stream.get_bytes(length)
+
+    res_crc = decryptor.decrypt(res_crc_compressed, length + decryptor.au3_ResCrcCompressed)
+    checksum = sum(list(res_crc))
+
+    parsed_data = []
+    while True:
+        file_str = decryptor.decrypt(stream.get_bytes(4), decryptor.au3_ResType)
+        if file_str != b"FILE":
+            log.debug("FILE magic mismatch")
+            # Asssume that this is the end of the embedded data
+            break
+
+        au3_ResSubType = read_string(stream, decryptor, decryptor.au3_ResSubType)
+        au3_ResName = read_string(stream, decryptor, decryptor.au3_ResName)
+        log.debug("Found a new autoit string: %s", au3_ResSubType)
+        log.debug("Found a new path: %s", au3_ResName)
+
+        au3_ResIsCompressed = stream.u8()
+        au3_ResSizeCompressed = stream.u32() ^ decryptor.au3_ResSize
+        au3_ResSize = stream.u32() ^ decryptor.au3_ResSize
+        stream.skip_bytes(0x10)
+
+        dec_data = decryptor.decrypt(
+            stream.get_bytes(au3_ResSizeCompressed),
+            checksum + decryptor.au3_ResContent,
+        )
+
+        if au3_ResIsCompressed == 1:
+            dec = jb01.decompress(dec_data)
+            if not dec:
+                log.error("Error while trying to decompress data")
+                break
+            dec_data = dec
+
+        if au3_ResSubType == ">AUTOHOTKEY SCRIPT<":
+            parsed_data.append(("script.ahk", dec_data))
+        else:
+            parsed_data.append((au3_ResSubType, dec_data))
+
+    if not parsed_data:
+        log.error("Couldn't decode the autoit script")
+        return None
+
+    return parsed_data
+
+
 def extract(
     data: bytes, version: Optional[AutoItVersion] = None
 ) -> Optional[List[Tuple[str, bytes]]]:
     if version is None:
         log.info("AutoIt version not specified, trying both")
-        return unpack_ea05(data) or unpack_ea06(data)
+        return unpack_ea05(data) or unpack_ea06(data) or unpack_jb01(data)
     elif version == AutoItVersion.EA05:
         return unpack_ea05(data)
     elif version == AutoItVersion.EA06:
         return unpack_ea06(data)
+    elif version == AutoItVersion.JB01:
+        return unpack_jb01(data)
     else:
         raise Exception("Unknown version specified, use AutoItVersion or None")
