@@ -1,2 +1,2 @@
 pefile==2019.4.18
-git+https://github.com/newmsk/JB01
+jb01 @ git+https://github.com/newmsk/JB01@master
