@@ -17,7 +17,7 @@ def main() -> int:
     parser.add_argument(
         "--ea",
         default="guess",
-        choices=["EA05", "EA06", "guess"],
+        choices=["EA05", "EA06", "JB01", "guess"],
         help="extract a specific version of AutoIt script (default: %(default)s)",
     )
 
@@ -35,6 +35,8 @@ def main() -> int:
         data = extract(data=file_data, version=AutoItVersion.EA05)
     if not data and args.ea in ("EA06", "guess"):
         data = extract(data=file_data, version=AutoItVersion.EA06)
+    if not data and args.ea in ("JB01", "guess"):
+        data = extract(data=file_data, version=AutoItVersion.JB01)
 
     if data:
         output = Path(args.output_dir)

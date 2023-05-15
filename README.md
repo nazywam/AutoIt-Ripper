@@ -17,10 +17,10 @@ This script is **heavily** based on 3 resources, definitely check them out if yo
 
 * `EA05` AutoIt3.00
 * `EA06` AutoIt3.26
+* `JB01` AutoHotKey v1
 
 ### Unknown:
 
-* `JB01` AutoHotKey
 * `JB01` AutoIT2
 
 ## Installation
@@ -67,7 +67,7 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   --verbose, -v
-  --ea {EA05,EA06,guess}
+  --ea {EA05,EA06,JB01,guess}
                         extract a specific version of AutoIt script (default: guess)
 
 ```
