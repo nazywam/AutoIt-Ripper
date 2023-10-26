@@ -174,13 +174,38 @@ def unpack_ea06(binary_data: bytes) -> Optional[List[Tuple[str, bytes]]]:
 
     pe.parse_data_directories()
     if not pe.DIRECTORY_ENTRY_RESOURCE:
+
         log.error("The input file has no resources")
-        return None
+        log.info("Checking overlay")
+
+        data = pe.get_overlay()
+        if data is None:
+            log.error("No overlay")
+            return None
+        
+        data = ByteStream(bytes(data)[0x18:])
+        parsed_data = parse_all(data, AutoItVersion.EA06)
+        if not parsed_data:
+            log.error("Couldn't decode the autoit script")
+            return None
+        return parsed_data
 
     script_resource = get_script_resource(pe)
     if script_resource is None:
         log.error("Couldn't find the script resource")
-        return None
+        log.info("Checking overlay")
+
+        data = pe.get_overlay()
+        if data is None:
+            log.error("No overlay")
+            return None
+        
+        data = ByteStream(bytes(data)[0x18:])
+        parsed_data = parse_all(data, AutoItVersion.EA06)
+        if not parsed_data:
+            log.error("Couldn't decode the autoit script")
+            return None
+        return parsed_data
 
     data_rva = script_resource.OffsetToData
     data_size = script_resource.Size
