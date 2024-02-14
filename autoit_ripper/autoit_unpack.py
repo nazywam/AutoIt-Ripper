@@ -154,11 +154,15 @@ def unpack_ea05(binary_data: bytes) -> Optional[List[Tuple[str, bytes]]]:
     au_off = binary_data.index(EA05_MAGIC)
     stream = ByteStream(binary_data[au_off + 20:])
 
-    if stream.get_bytes(4) != b"EA05":
+    magic = stream.get_bytes(4)
+    if magic == b"EA05":
+        parsed_data = parse_all(stream, AutoItVersion.EA05)
+    elif magic == b"EA06":
+        parsed_data = parse_all(stream, AutoItVersion.EA06)
+    else:
         log.error("EA05 magic mismatch")
         return None
 
-    parsed_data = parse_all(stream, AutoItVersion.EA05)
     if not parsed_data:
         log.error("Couldn't decode the autoit script")
         return None
