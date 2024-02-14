@@ -173,7 +173,7 @@ def unpack_ea06(binary_data: bytes) -> Optional[List[Tuple[str, bytes]]]:
         return None
 
     pe.parse_data_directories()
-    if not pe.DIRECTORY_ENTRY_RESOURCE:
+    if not hasattr(pe, "DIRECTORY_ENTRY_RESOURCE") or not pe.DIRECTORY_ENTRY_RESOURCE:
         log.error("The input file has no resources")
         return None
 
