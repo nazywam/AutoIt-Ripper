@@ -167,7 +167,10 @@ def unpack_ea05(binary_data: bytes) -> Optional[List[Tuple[str, bytes]]]:
 
 
 def unpack_ea06(binary_data: bytes) -> Optional[List[Tuple[str, bytes]]]:
-    pe = pefile.PE(data=binary_data, fast_load=True)
+    try:
+        pe = pefile.PE(data=binary_data, fast_load=True)
+    except pefile.PEFormatError:
+        pe = None
     if not pe:
         log.error("Failed to parse the input file")
         return None
