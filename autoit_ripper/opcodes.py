@@ -77,6 +77,18 @@ def read_keyword(stream: TokenStream) -> str:
     return keyword
 
 
+def capitalize_function(data: str) -> str:
+    if data in FUNCTIONS_INVERT_CASE:
+        return FUNCTIONS_INVERT_CASE[data]
+    return data
+
+
+def capitalize_macro(data: str) -> str:
+    if data in MACROS_INVERT_CASE:
+        return MACROS_INVERT_CASE[data]
+    return data
+
+
 OPCODES = {
     # Keyword
     0x00: read_keyword_id,
@@ -88,8 +100,8 @@ OPCODES = {
     0x20: lambda x: str(x.f64()),
     # Statements
     0x30: read_keyword,
-    0x31: lambda x: FUNCTIONS_INVERT_CASE[x.get_xored_string()],
-    0x32: lambda x: "@" + MACROS_INVERT_CASE[x.get_xored_string()],
+    0x31: lambda x: capitalize_function(x.get_xored_string()),
+    0x32: lambda x: "@" + capitalize_macro(x.get_xored_string()),
     0x33: lambda x: "$" + x.get_xored_string(),
     0x34: lambda x: x.get_xored_string(),
     0x35: lambda x: "." + x.get_xored_string(),
