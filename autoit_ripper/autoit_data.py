@@ -553,4 +553,11 @@ MACROS = (
     "AutoItX64",
     "Unicode ",
     "MUILang",
+    "COM_EventObj",
+    "GUI_CtrlId",
+    "GUI_CtrlHandle",
+    "GUI_DragId",
+    "GUI_DragFile",
+    "GUI_DropId",
+    "GUI_WinHandle",
 )
