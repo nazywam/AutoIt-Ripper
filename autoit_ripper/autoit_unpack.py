@@ -146,6 +146,28 @@ def parse_all(stream: ByteStream, version: AutoItVersion) -> List[Tuple[str, byt
         raise Exception("Unsupported autoit version %s", version)
 
 
+def get_script_data(pe: pefile.PE) -> Optional[bytes]:
+    pe.parse_data_directories()
+    if not hasattr(pe, "DIRECTORY_ENTRY_RESOURCE") or not pe.DIRECTORY_ENTRY_RESOURCE:
+        log.error("The input file has no resources")
+        return None
+
+    script_resource = get_script_resource(pe)
+    if script_resource is None:
+        log.error("Couldn't find the script resource")
+        return None
+
+    data_rva = script_resource.OffsetToData
+    data_size = script_resource.Size
+    script_data = pe.get_memory_mapped_image()[data_rva: data_rva + data_size]
+
+    return script_data
+
+
+def get_overlay_data(pe: pefile.PE) -> Optional[bytes]:
+    return pe.get_overlay()
+
+
 def unpack_ea05(binary_data: bytes) -> Optional[List[Tuple[str, bytes]]]:
     if EA05_MAGIC not in binary_data:
         log.error("Couldn't find the location chunk in binary")
@@ -179,19 +201,13 @@ def unpack_ea06(binary_data: bytes) -> Optional[List[Tuple[str, bytes]]]:
         log.error("Failed to parse the input file")
         return None
 
-    pe.parse_data_directories()
-    if not hasattr(pe, "DIRECTORY_ENTRY_RESOURCE") or not pe.DIRECTORY_ENTRY_RESOURCE:
-        log.error("The input file has no resources")
-        return None
-
-    script_resource = get_script_resource(pe)
-    if script_resource is None:
-        log.error("Couldn't find the script resource")
-        return None
-
-    data_rva = script_resource.OffsetToData
-    data_size = script_resource.Size
-    script_data = pe.get_memory_mapped_image()[data_rva: data_rva + data_size]
+    script_data = get_script_data(pe)
+    if not script_data:
+        log.warning("Couldn't get data from script resource, trying layover")
+        script_data = get_overlay_data(pe)
+        if not script_data:
+            log.error("No data in overlay either")
+            return None
 
     stream = ByteStream(bytes(script_data)[0x18:])
     parsed_data = parse_all(stream, AutoItVersion.EA06)
