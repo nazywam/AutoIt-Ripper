@@ -14,12 +14,6 @@ def main() -> int:
     parser.add_argument("file", help="input binary")
     parser.add_argument("output_dir", help="output directory")
     parser.add_argument("--verbose", "-v", action="store_true")
-    parser.add_argument(
-        "--ea",
-        default="guess",
-        choices=["EA05", "EA06", "guess"],
-        help="extract a specific version of AutoIt script (default: %(default)s)",
-    )
 
     args = parser.parse_args()
     if args.verbose:
@@ -30,19 +24,16 @@ def main() -> int:
     with open(args.file, "rb") as f:
         file_data = f.read()
 
-    data = None
-    if args.ea in ("EA05", "guess"):
-        data = extract(data=file_data, version=AutoItVersion.EA05)
-    if not data and args.ea in ("EA06", "guess"):
-        data = extract(data=file_data, version=AutoItVersion.EA06)
+    scripts = extract(data=file_data)
+    log.info(f"Found {len(scripts)} AutoIt scripts in the executable")
 
-    if data:
+    if scripts:
         output = Path(args.output_dir)
         if not output.is_dir():
             log.info("The output directory doesn't exist, creating it")
             output.mkdir()
 
-        for filename_w, content in data:
+        for filename_w, content in scripts:
             # We need to convert the nasty Windows path into a nice, unix one
             filename = PureWindowsPath(filename_w)
             log.info(f"Storing result in {(output / filename.name).as_posix()}")

@@ -12,12 +12,13 @@ from .utils import (
     EA06Decryptor,
     crc_data,
     filetime_to_dt,
+    xor
 )
 
 log = logging.getLogger(__name__)
 
 
-EA05_MAGIC = bytes.fromhex("a3484bbe986c4aa9994c530a86d6487d41553321")
+AUTOIT_MAGIC = bytes.fromhex("a3484bbe986c4aa9994c530a86d6487d41553321")
 
 
 def find_root_dir(pe: pefile.PE, RT_Name: str) -> Optional[pefile.ResourceDirData]:
@@ -64,9 +65,18 @@ def read_string(
     return decryptor.decrypt(stream.get_bytes(length), enc_key).decode(encoding)
 
 
-def parse_au3_header(
-    stream: ByteStream, checksum: int, decryptor: Union[EA05Decryptor, EA06Decryptor]
-) -> Iterator[Tuple[str, bytes]]:
+def parse_au3_header(stream: ByteStream) -> Iterator[Tuple[str, bytes]]:
+    magic = stream.get_bytes(4)
+    
+    if magic == b"EA05":
+        decryptor = EA05Decryptor()
+        checksum = sum(list(stream.get_bytes(16)))
+    elif magic == b"EA06":
+        decryptor = EA06Decryptor()
+        _ = stream.get_bytes(16) # Ignore checksum
+        checksum = 0
+    else:
+        raise Exception("Unsupported AutoIt version %s", version)
 
     while True:
         file_str = decryptor.decrypt(stream.get_bytes(4), decryptor.au3_ResType)
@@ -78,7 +88,7 @@ def parse_au3_header(
 
         au3_ResSubType = read_string(stream, decryptor, decryptor.au3_ResSubType)
         au3_ResName = read_string(stream, decryptor, decryptor.au3_ResName)
-        log.debug("Found a new autoit string: %s", au3_ResSubType)
+        log.debug("Found a new AutoIt string: %s", au3_ResSubType)
         log.debug("Found a new path: %s", au3_ResName)
 
         if au3_ResSubType == ">>>AUTOIT NO CMDEXECUTE<<<":
@@ -107,9 +117,7 @@ def parse_au3_header(
             if au3_ResCrcCompressed == crc_data(dec_data):
                 log.debug("CRC data matches")
             else:
-                log.error("CRC data mismatch")
-                return
-                yield
+                log.warning("CRC data mismatch")
 
             if au3_ResIsCompressed == 1:
                 dec = decompress(ByteStream(dec_data))
@@ -129,50 +137,9 @@ def parse_au3_header(
                 yield (au3_ResSubType, dec_data)
 
 
-def parse_all(stream: ByteStream, version: AutoItVersion) -> List[Tuple[str, bytes]]:
-    checksum = sum(list(stream.get_bytes(16)))
-
-    if version == AutoItVersion.EA05:
-        return list(
-            parse_au3_header(
-                stream=stream, checksum=checksum, decryptor=EA05Decryptor()
-            )
-        )
-    elif version == AutoItVersion.EA06:
-        return list(
-            parse_au3_header(stream=stream, checksum=0, decryptor=EA06Decryptor())
-        )
-    else:
-        raise Exception("Unsupported autoit version %s", version)
-
-
-def unpack_ea05(binary_data: bytes) -> Optional[List[Tuple[str, bytes]]]:
-    if EA05_MAGIC not in binary_data:
-        log.error("Couldn't find the location chunk in binary")
-        return None
-
-    au_off = binary_data.index(EA05_MAGIC)
-    stream = ByteStream(binary_data[au_off + 20:])
-
-    magic = stream.get_bytes(4)
-    if magic == b"EA05":
-        parsed_data = parse_all(stream, AutoItVersion.EA05)
-    elif magic == b"EA06":
-        parsed_data = parse_all(stream, AutoItVersion.EA06)
-    else:
-        log.error("EA05 magic mismatch")
-        return None
-
-    if not parsed_data:
-        log.error("Couldn't decode the autoit script")
-        return None
-
-    return parsed_data
-
-
-def unpack_ea06(binary_data: bytes) -> Optional[List[Tuple[str, bytes]]]:
+def extract_script_data_from_rsrc(data: bytes) -> Optional[ByteStream]:
     try:
-        pe = pefile.PE(data=binary_data, fast_load=True)
+        pe = pefile.PE(data=data, fast_load=True)
     except pefile.PEFormatError:
         pe = None
     if not pe:
@@ -192,24 +159,75 @@ def unpack_ea06(binary_data: bytes) -> Optional[List[Tuple[str, bytes]]]:
     data_rva = script_resource.OffsetToData
     data_size = script_resource.Size
     script_data = pe.get_memory_mapped_image()[data_rva: data_rva + data_size]
+    stream = ByteStream(bytes(script_data)[len(AUTOIT_MAGIC):])
 
-    stream = ByteStream(bytes(script_data)[0x18:])
-    parsed_data = parse_all(stream, AutoItVersion.EA06)
-    if not parsed_data:
-        log.error("Couldn't decode the autoit script")
+    return stream
+
+
+def extract_script_data_from_magic(data: bytes) -> Optional[ByteStream]:
+    if AUTOIT_MAGIC not in data:
+        log.error("Couldn't find the location chunk in binary")
         return None
-    return parsed_data
+
+    au_off = binary_data.index(AUTOIT_MAGIC)
+    stream = ByteStream(data[au_off + len(AUTOIT_MAGIC):])
+
+    return stream
 
 
-def extract(
-    data: bytes, version: Optional[AutoItVersion] = None
-) -> Optional[List[Tuple[str, bytes]]]:
-    if version is None:
-        log.info("AutoIt version not specified, trying both")
-        return unpack_ea05(data) or unpack_ea06(data)
-    elif version == AutoItVersion.EA05:
-        return unpack_ea05(data)
-    elif version == AutoItVersion.EA06:
-        return unpack_ea06(data)
-    else:
-        raise Exception("Unknown version specified, use AutoItVersion or None")
+def extract_script_data_from_overlay(data: bytes) -> Optional[ByteStream]:
+    try:
+        pe = pefile.PE(data=data, fast_load=True)
+    except pefile.PEFormatError:
+        pe = None
+    if not pe:
+        log.error("Failed to parse the input file")
+        return None
+    
+    script_data = pe.get_overlay()
+
+    if len(script_data) == 0:
+        log.info("No data found in the PE overlay")
+        return None
+    
+    xored = xor(script_data[:len(AUTOIT_MAGIC)], AUTOIT_MAGIC)
+    valid = xored.count(xored[0]) == len(AUTOIT_MAGIC)
+
+    if not valid:
+        log.info("Unable to find a valid xor key")
+        return None
+    
+    xor_key = xored[0]
+    log.info(f"Found a valid xor key: {hex(xor_key)}")
+
+    script_data = xor(script_data, bytes([xor_key]))
+    stream = ByteStream(script_data[len(AUTOIT_MAGIC):])
+
+    return stream
+
+
+def extract_script_data(data: bytes) -> ByteStream:
+    log.info("Trying to extract script data from resources")
+    stream = extract_script_data_from_rsrc(data)
+
+    if stream:
+        return stream
+    
+    log.info("Trying to extract script data by finding the AutoIt signature")
+    stream = extract_script_data_from_magic(data)
+
+    if stream:
+        return stream
+    
+    log.info("Trying to extract script data by extracting data in the PE overlay")
+    return extract_script_data_from_overlay(data)
+
+
+def extract(data: bytes) -> List[Tuple[str, bytes]]:
+    stream = extract_script_data(data)
+
+    if not stream:
+        log.error("Unable to find script data")
+        return None
+    
+    return list(parse_au3_header(stream))
