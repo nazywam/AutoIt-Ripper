@@ -51,7 +51,7 @@ def read_string(
     stream: ByteStream,
     decryptor: Union[EA05Decryptor, EA06Decryptor],
     keys: Tuple[int, int],
-) -> str:
+) -> Optional[str]:
     length = stream.u32() ^ keys[0]
     enc_key = length + keys[1]
 
@@ -61,7 +61,10 @@ def read_string(
     else:
         encoding = "utf-8"
 
-    return decryptor.decrypt(stream.get_bytes(length), enc_key).decode(encoding)
+    try:
+        return decryptor.decrypt(stream.get_bytes(length), enc_key).decode(encoding)
+    except UnicodeDecodeError:
+        return None
 
 
 def parse_au3_header(
@@ -74,10 +77,12 @@ def parse_au3_header(
             log.debug("FILE magic mismatch")
             # Asssume that this is the end of the embedded data
             return
-            yield
 
         au3_ResSubType = read_string(stream, decryptor, decryptor.au3_ResSubType)
         au3_ResName = read_string(stream, decryptor, decryptor.au3_ResName)
+        if not au3_ResSubType or not au3_ResName:
+            log.error("Unicode decode error when decoding type and name")
+            return
         log.debug("Found a new autoit string: %s", au3_ResSubType)
         log.debug("Found a new path: %s", au3_ResName)
 
@@ -109,14 +114,12 @@ def parse_au3_header(
             else:
                 log.error("CRC data mismatch")
                 return
-                yield
 
             if au3_ResIsCompressed == 1:
                 dec = decompress(ByteStream(dec_data))
                 if not dec:
                     log.error("Error while trying to decompress data")
                     return
-                    yield
                 dec_data = dec
 
             if au3_ResSubType == ">>>AUTOIT SCRIPT<<<":
