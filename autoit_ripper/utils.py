@@ -148,3 +148,17 @@ class EA06Decryptor(DecryptorBase):
 
     def decrypt(self, data: bytes, key: int) -> bytes:
         return decrypt_lame(data, key)
+
+
+class JB01Decryptor(DecryptorBase):
+    au3_Unicode = False
+    au3_ResType = 0x16FA
+    au3_ResSubType = (0x29BC, 0xA25E)
+    au3_ResName = (0x29AC, 0xF25E)
+    au3_ResSize = 0x45AA
+    au3_ResCrcCompressedSize = 0xFAC1
+    au3_ResCrcCompressed = 0xC3D2
+    au3_ResContent = 0x22AF
+
+    def decrypt(self, data: bytes, key: int) -> bytes:
+        return decrypt_mt(data, key)
