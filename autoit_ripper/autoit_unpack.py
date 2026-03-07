@@ -2,7 +2,6 @@ import logging
 from typing import Iterator, List, Optional, Tuple, Union
 
 import pefile  # type: ignore
-import jb01
 
 from .decompress import decompress
 from .opcodes import deassemble_script
@@ -20,6 +19,7 @@ log = logging.getLogger(__name__)
 
 
 EA05_MAGIC = bytes.fromhex("a3484bbe986c4aa9994c530a86d6487d41553321")
+# JB01 magic is 4 bytes shorter for some reason
 JB01_MAGIC = bytes.fromhex("a3484bbe986c4aa9994c530a86d6487d")
 
 
@@ -154,7 +154,7 @@ def parse_all(stream: ByteStream, version: AutoItVersion) -> List[Tuple[str, byt
 
 def unpack_ea05(binary_data: bytes) -> Optional[List[Tuple[str, bytes]]]:
     if EA05_MAGIC not in binary_data:
-        log.error("Couldn't find the location chunk in binary")
+        log.error("Couldn't find the EA05 location chunk in binary")
         return None
 
     au_off = binary_data.index(EA05_MAGIC)
@@ -209,14 +209,17 @@ def unpack_ea06(binary_data: bytes) -> Optional[List[Tuple[str, bytes]]]:
 
 def unpack_jb01(binary_data: bytes) -> Optional[List[Tuple[str, bytes]]]:
     if JB01_MAGIC not in binary_data:
-        log.error("Couldn't find the location chunk in binary")
+        log.error("Couldn't find the JB01 location chunk in binary")
         return None
 
     au_off = binary_data.index(JB01_MAGIC)
+
     stream = ByteStream(binary_data[au_off+len(JB01_MAGIC):])
-    if stream.i8() != 3:
-        log.error("Unknown name field mismatch")
+    name_field = stream.i8()
+    if name_field != 3:
+        log.error("Unknown name field mismatch: %s", stream.i8())
         return None
+
     decryptor = JB01Decryptor()
     length = stream.u32() ^ decryptor.au3_ResCrcCompressedSize
     res_crc_compressed = stream.get_bytes(length)
@@ -248,14 +251,16 @@ def unpack_jb01(binary_data: bytes) -> Optional[List[Tuple[str, bytes]]]:
         )
 
         if au3_ResIsCompressed == 1:
-            dec = jb01.decompress(dec_data)
+            dec = decompress(ByteStream(dec_data))
             if not dec:
                 log.error("Error while trying to decompress data")
-                break
+                return
             dec_data = dec
 
         if au3_ResSubType == ">AUTOHOTKEY SCRIPT<":
             parsed_data.append(("script.ahk", dec_data))
+        elif au3_ResSubType == ">AHK WITH ICON<":
+            parsed_data.append(("script-icon.ahk", dec_data))
         else:
             parsed_data.append((au3_ResSubType, dec_data))
 
