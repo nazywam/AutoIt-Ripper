@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="autoit-ripper",
-    version="1.1.2",
+    version="1.2.0",
     author="nazywam",
     author_email="nazywam@gmail.com",
     description="Extract AutoIt scripts embedded in PE binaries",
@@ -24,5 +24,5 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.6",
+    python_requires=">=3.10",
 )
