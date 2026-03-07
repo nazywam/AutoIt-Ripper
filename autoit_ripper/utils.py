@@ -2,7 +2,6 @@ from datetime import datetime, timedelta
 from enum import Enum
 from itertools import cycle
 from struct import unpack_from
-from typing import Optional, Tuple
 from zlib import adler32
 
 from .lame import LAME
@@ -44,7 +43,7 @@ class ByteStream:
     def skip_bytes(self, num: int) -> None:
         self._offset += num
 
-    def get_bytes(self, num: Optional[int]) -> bytes:
+    def get_bytes(self, num: int | None) -> bytes:
         if num is None:
             num = len(self._data) - self._offset
 
@@ -112,13 +111,13 @@ def crc_data(data: bytes) -> int:
 
 
 class DecryptorBase:
-    au3_Unicode: Optional[bool] = None
-    au3_ResType: Optional[int] = None
-    au3_ResSubType: Optional[Tuple[int, int]] = None
-    au3_ResName: Optional[Tuple[int, int]] = None
-    au3_ResSize: Optional[int] = None
-    au3_ResCrcCompressed: Optional[int] = None
-    au3_ResContent: Optional[int] = None
+    au3_Unicode: bool | None = None
+    au3_ResType: int | None = None
+    au3_ResSubType: tuple[int, int] | None = None
+    au3_ResName: tuple[int, int] | None = None
+    au3_ResSize: int | None = None
+    au3_ResCrcCompressed: int | None = None
+    au3_ResContent: int | None = None
 
     def decrypt(self, data: bytes, key: int) -> bytes:
         raise NotImplementedError

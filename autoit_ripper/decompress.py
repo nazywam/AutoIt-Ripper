@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from .utils import AutoItVersion, BitStream, ByteStream
 from .huffman import HuffmanBitStream, JB01_HUFF_LITERAL_LENSTART, JB01_MINMATCHLEN
@@ -46,7 +45,7 @@ def read_match_len(bin_data: BitStream) -> int:
 
     return length + length_add
 
-def decompress_jb01(stream: ByteStream, uncompressed_size: int) -> Optional[bytes]:
+def decompress_jb01(stream: ByteStream, uncompressed_size: int) -> bytes | None:
     huffman = HuffmanBitStream(stream.get_bytes(None))
     out_data = bytearray(uncompressed_size)
     out_pos = 0
@@ -70,7 +69,7 @@ def decompress_jb01(stream: ByteStream, uncompressed_size: int) -> Optional[byte
 
     return bytes(out_data)
 
-def decompress_default(stream: ByteStream, uncompressed_size: int, version: AutoItVersion) -> Optional[bytes]:
+def decompress_default(stream: ByteStream, uncompressed_size: int, version: AutoItVersion) -> bytes | None:
     literal_symbol = EA06_LITERAL if version == AutoItVersion.EA06 else EA05_LITERAL
     bin_data = BitStream(stream.get_bytes(None))
 
@@ -104,7 +103,7 @@ def decompress_default(stream: ByteStream, uncompressed_size: int, version: Auto
     return bytes(out_data)
 
 
-def decompress(stream: ByteStream) -> Optional[bytes]:
+def decompress(stream: ByteStream) -> bytes | None:
     version = None
     comp_magic = stream.get_bytes(4)
 

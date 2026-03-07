@@ -1,5 +1,5 @@
 import logging
-from typing import Iterator, List, Optional, Tuple, Union
+from typing import Iterator
 
 import pefile  # type: ignore
 
@@ -23,7 +23,7 @@ EA05_MAGIC = bytes.fromhex("a3484bbe986c4aa9994c530a86d6487d41553321")
 JB01_MAGIC = bytes.fromhex("a3484bbe986c4aa9994c530a86d6487d")
 
 
-def find_root_dir(pe: pefile.PE, RT_Name: str) -> Optional[pefile.ResourceDirData]:
+def find_root_dir(pe: pefile.PE, RT_Name: str) -> pefile.ResourceDirData | None:
     dir_entries = [
         entry
         for entry in pe.DIRECTORY_ENTRY_RESOURCE.entries
@@ -39,7 +39,7 @@ def find_root_dir(pe: pefile.PE, RT_Name: str) -> Optional[pefile.ResourceDirDat
         return None
 
 
-def get_script_resource(pe: pefile.PE) -> Optional[pefile.Structure]:
+def get_script_resource(pe: pefile.PE) -> pefile.Structure | None:
     root_dirs = find_root_dir(pe=pe, RT_Name="RT_RCDATA")
     if not root_dirs:
         return None
@@ -52,9 +52,9 @@ def get_script_resource(pe: pefile.PE) -> Optional[pefile.Structure]:
 
 def read_string(
     stream: ByteStream,
-    decryptor: Union[EA05Decryptor, EA06Decryptor],
-    keys: Tuple[int, int],
-) -> Optional[str]:
+    decryptor: EA05Decryptor | EA06Decryptor,
+    keys: tuple[int, int],
+) -> str | None:
     length = stream.u32() ^ keys[0]
     enc_key = length + keys[1]
 
@@ -71,8 +71,8 @@ def read_string(
 
 
 def parse_au3_header(
-    stream: ByteStream, checksum: int, decryptor: Union[EA05Decryptor, EA06Decryptor]
-) -> Iterator[Tuple[str, bytes]]:
+    stream: ByteStream, checksum: int, decryptor: EA05Decryptor | EA06Decryptor
+) -> Iterator[tuple[str, bytes]]:
 
     while True:
         file_str = decryptor.decrypt(stream.get_bytes(4), decryptor.au3_ResType)
@@ -135,7 +135,7 @@ def parse_au3_header(
                 yield (au3_ResSubType, dec_data)
 
 
-def parse_all(stream: ByteStream, version: AutoItVersion) -> List[Tuple[str, bytes]]:
+def parse_all(stream: ByteStream, version: AutoItVersion) -> list[tuple[str, bytes]]:
     checksum = sum(list(stream.get_bytes(16)))
 
     if version == AutoItVersion.EA05:
@@ -152,7 +152,7 @@ def parse_all(stream: ByteStream, version: AutoItVersion) -> List[Tuple[str, byt
         raise Exception("Unsupported autoit version %s", version)
 
 
-def unpack_ea05(binary_data: bytes) -> Optional[List[Tuple[str, bytes]]]:
+def unpack_ea05(binary_data: bytes) -> list[tuple[str, bytes]] | None:
     if EA05_MAGIC not in binary_data:
         log.error("Couldn't find the EA05 location chunk in binary")
         return None
@@ -176,7 +176,7 @@ def unpack_ea05(binary_data: bytes) -> Optional[List[Tuple[str, bytes]]]:
     return parsed_data
 
 
-def unpack_ea06(binary_data: bytes) -> Optional[List[Tuple[str, bytes]]]:
+def unpack_ea06(binary_data: bytes) -> list[tuple[str, bytes]] | None:
     try:
         pe = pefile.PE(data=binary_data, fast_load=True)
     except pefile.PEFormatError:
@@ -207,7 +207,7 @@ def unpack_ea06(binary_data: bytes) -> Optional[List[Tuple[str, bytes]]]:
     return parsed_data
 
 
-def unpack_jb01(binary_data: bytes) -> Optional[List[Tuple[str, bytes]]]:
+def unpack_jb01(binary_data: bytes) -> list[tuple[str, bytes]] | None:
     if JB01_MAGIC not in binary_data:
         log.error("Couldn't find the JB01 location chunk in binary")
         return None
@@ -272,8 +272,8 @@ def unpack_jb01(binary_data: bytes) -> Optional[List[Tuple[str, bytes]]]:
 
 
 def extract(
-    data: bytes, version: Optional[AutoItVersion] = None
-) -> Optional[List[Tuple[str, bytes]]]:
+    data: bytes, version: AutoItVersion | None = None
+) -> list[tuple[str, bytes]] | None:
     if version is None:
         log.info("AutoIt version not specified, trying both")
         return unpack_ea05(data) or unpack_ea06(data) or unpack_jb01(data)

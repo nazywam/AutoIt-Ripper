@@ -1,5 +1,4 @@
 import struct
-from typing import List
 
 
 def rolling_rol(x: int, y: int) -> int:
@@ -11,7 +10,7 @@ def rolling_rol(x: int, y: int) -> int:
 class LAME:
     c0: int
     c1: int
-    grp1: List[int]
+    grp1: list[int]
     field_D4: int
 
     def __init__(self) -> None:
